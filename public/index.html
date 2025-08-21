@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Daily Fortune</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div class="hud-left">
+    <div class="lang" role="tablist" aria-label="Language">
+      <button id="btnTR" role="tab" aria-pressed="false">TR</button>
+      <button id="btnEN" role="tab" aria-pressed="true">EN</button>
+    </div>
+    <div class="brand-chip">🥠 Daily Fortune</div>
+  </div>
+
+  <main class="wrap">
+    <section id="cookieStage" class="stage">
+      <div class="scene">
+        <div id="cookie" class="cookie cookie-bob" role="button" aria-label="Open fortune" tabindex="0">
+          <div class="paper-slip" aria-hidden="true"></div>
+          <div class="half left"><img src="assets/fortune-cookie.png" alt="Fortune cookie mascot left half"/></div>
+          <div class="half right"><img src="assets/fortune-cookie.png" alt="Fortune cookie mascot right half"/></div>
+          <div class="crumbs">
+            <div class="crumb c1"></div>
+            <div class="crumb c2"></div>
+            <div class="crumb c3"></div>
+            <div class="crumb c4"></div>
+          </div>
+        </div>
+        <div id="tapText" class="hintTap">tap to crack</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="main.js" defer></script>
+</body>
+</html>
