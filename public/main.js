@@ -144,3 +144,4 @@ document.getElementById('cookie')?.addEventListener('keydown', (e) => {
   }
   // else: show cookie normally (no action needed)
 })();
+
