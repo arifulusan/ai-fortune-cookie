@@ -67,13 +67,28 @@ function injectReveal() {
   return section;
 }
 
+function revealFromData(data) {
+  const cookieStage = document.getElementById('cookieStage');
+  cookieStage?.remove();
+  injectReveal();
+  document.getElementById('fortuneText').textContent =
+    data.fortune[currentLang] || data.fortune.en || data.fortune.tr || '…';
+  startCountdown(data.serverNow, data.refreshAt);
+  const hintEl = document.getElementById('hint');
+  hintEl.textContent = (currentLang === 'tr')
+    ? 'Her cihaz için 24 saatte bir fal.'
+    : 'One fortune per device per 24 hours.';
+}
+
 async function getPeek() {
   try {
     const r = await fetch('/api/fortune');
     if (!r.ok) return null;
     const j = await r.json();
     return j?.fortune ? j : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 async function postFortune() {
@@ -86,23 +101,17 @@ async function postFortune() {
 
 async function crackAndReveal() {
   if (revealed) return; revealed = true;
+
   const cookieEl = document.getElementById('cookie');
   const cookieStage = document.getElementById('cookieStage');
   cookieEl.classList.add('crack');
 
   const proceed = async () => {
     try {
-      const data = await postFortune();
-      cookieStage?.remove();
-      injectReveal();
-      document.getElementById('fortuneText').textContent =
-        data.fortune[currentLang] || data.fortune.en || data.fortune.tr || '…';
-      startCountdown(data.serverNow, data.refreshAt);
-      const hintEl = document.getElementById('hint');
-      hintEl.textContent = (currentLang === 'tr')
-        ? 'Her cihaz için 24 saatte bir fal.'
-        : 'One fortune per device per 24 hours.';
+      const data = await postFortune();          // generate-or-return
+      revealFromData(data);
     } catch {
+      // keep UX graceful on error
       cookieStage?.remove();
       injectReveal();
       document.getElementById('fortuneText').textContent =
@@ -124,5 +133,14 @@ document.getElementById('cookie')?.addEventListener('keydown', (e) => {
 });
 
 // init
-setLangUI(currentLang);
-getPeek();
+(async () => {
+  setLangUI(currentLang);
+
+  // If user already has a valid fortune, skip cookie and reveal immediately
+  const peek = await getPeek();
+  if (peek && peek.fortune) {
+    revealFromData(peek);
+    return;
+  }
+  // else: show cookie normally (no action needed)
+})();
