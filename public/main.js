@@ -1,10 +1,19 @@
-const LS_LANG = 'fc_lang_pref';
-let currentLang = localStorage.getItem(LS_LANG) ||
+// public/main.js — skip cookie if user already has today's fortune
+
+const LS = {
+  lang: 'fc_lang_pref',
+  fortune: 'fc_fortune_texts',
+  refreshAt: 'fc_refresh_at',
+  createdAt: 'fc_created_at'
+};
+
+let currentLang =
+  localStorage.getItem(LS.lang) ||
   ((navigator.language || 'en').toLowerCase().startsWith('tr') ? 'tr' : 'en');
 
 function setLangUI(lang) {
   currentLang = lang;
-  localStorage.setItem(LS_LANG, lang);
+  localStorage.setItem(LS.lang, lang);
   document.getElementById('btnTR')?.setAttribute('aria-pressed', String(lang === 'tr'));
   document.getElementById('btnEN')?.setAttribute('aria-pressed', String(lang === 'en'));
   const tapText = document.getElementById('tapText');
@@ -67,22 +76,49 @@ function injectReveal() {
   return section;
 }
 
+function saveLocal(data) {
+  try {
+    if (data?.fortune && data?.refreshAt) {
+      localStorage.setItem(LS.fortune, JSON.stringify(data.fortune));
+      localStorage.setItem(LS.refreshAt, data.refreshAt);
+      localStorage.setItem(LS.createdAt, data.createdAt || data.serverNow || new Date().toISOString());
+    }
+  } catch {}
+}
+
+function loadLocal() {
+  try {
+    const texts = JSON.parse(localStorage.getItem(LS.fortune) || 'null');
+    const refreshAt = localStorage.getItem(LS.refreshAt);
+    const createdAt = localStorage.getItem(LS.createdAt);
+    if (!texts || !refreshAt) return null;
+    return {
+      ok: true,
+      fortune: texts,
+      createdAt,
+      refreshAt,
+      serverNow: new Date().toISOString()
+    };
+  } catch { return null; }
+}
+
 function revealFromData(data) {
   const cookieStage = document.getElementById('cookieStage');
-  cookieStage?.remove();
+  cookieStage?.remove(); // ⟵ ensure cookie page is gone
   injectReveal();
   document.getElementById('fortuneText').textContent =
-    data.fortune[currentLang] || data.fortune.en || data.fortune.tr || '…';
+    data.fortune?.[currentLang] || data.fortune?.en || data.fortune?.tr || '…';
   startCountdown(data.serverNow, data.refreshAt);
   const hintEl = document.getElementById('hint');
   hintEl.textContent = (currentLang === 'tr')
     ? 'Her cihaz için 24 saatte bir fal.'
     : 'One fortune per device per 24 hours.';
+  saveLocal(data); // keep local copy in case server cache resets
 }
 
 async function getPeek() {
   try {
-    const r = await fetch('/api/fortune');
+    const r = await fetch('/api/fortune', { cache: 'no-store' });
     if (!r.ok) return null;
     const j = await r.json();
     return j?.fortune ? j : null;
@@ -108,10 +144,10 @@ async function crackAndReveal() {
 
   const proceed = async () => {
     try {
-      const data = await postFortune();          // generate-or-return
+      const data = await postFortune();  // generate-or-return (server also enforces 24h)
       revealFromData(data);
     } catch {
-      // keep UX graceful on error
+      // graceful error state
       cookieStage?.remove();
       injectReveal();
       document.getElementById('fortuneText').textContent =
@@ -136,12 +172,24 @@ document.getElementById('cookie')?.addEventListener('keydown', (e) => {
 (async () => {
   setLangUI(currentLang);
 
-  // If user already has a valid fortune, skip cookie and reveal immediately
-  const peek = await getPeek();
-  if (peek && peek.fortune) {
-    revealFromData(peek);
+  // Hide the cookie until we decide which view to show (prevents flash)
+  const cookieStage = document.getElementById('cookieStage');
+  if (cookieStage) cookieStage.style.display = 'none';
+
+  // 1) Prefer server cache
+  const server = await getPeek();
+  if (server) {
+    revealFromData(server);
     return;
   }
-  // else: show cookie normally (no action needed)
-})();
 
+  // 2) If server lost cache but local has a valid fortune, use it
+  const local = loadLocal();
+  if (local && new Date(local.refreshAt).getTime() > Date.now()) {
+    revealFromData(local);
+    return;
+  }
+
+  // 3) No fortune: show cookie
+  if (cookieStage) cookieStage.style.display = '';
+})();
