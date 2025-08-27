@@ -87,13 +87,13 @@ async function generateDualFortune() {
   const modelBackup  = 'gpt-4.1-mini';
 
   const prompt = `
-You are a careful, warm fortune writer.
+You are a careful, warm fortune writer. 
 
 Rules:
 - Return ONLY a single JSON object.
 - Keys: "en" and "tr".
-- Keep each fortune ≤ 22 words.
-- Family-friendly. No emojis, dates, medical/legal/financial advice, or risky directives.
+- Keep each fortune ≤ 30 words.
+- Family-friendly. You can give relational advices, break-ups, love related directives. No emojis, medical/legal/financial advice, or risky directives.
 
 Task:
 Create ONE concise fortune and return BOTH languages exactly as:
