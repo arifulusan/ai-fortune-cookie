@@ -1,4 +1,5 @@
 // public/main.js — skip cookie if user already has today's fortune
+// and allow live language switching after reveal.
 
 const LS = {
   lang: 'fc_lang_pref',
@@ -11,6 +12,10 @@ let currentLang =
   localStorage.getItem(LS.lang) ||
   ((navigator.language || 'en').toLowerCase().startsWith('tr') ? 'tr' : 'en');
 
+let revealed = false;
+let countdownTimer = null;
+let currentData = null; // <- keep the currently shown fortune/times here
+
 function setLangUI(lang) {
   currentLang = lang;
   localStorage.setItem(LS.lang, lang);
@@ -18,10 +23,31 @@ function setLangUI(lang) {
   document.getElementById('btnEN')?.setAttribute('aria-pressed', String(lang === 'en'));
   const tapText = document.getElementById('tapText');
   if (tapText) tapText.textContent = (lang === 'tr') ? 'çatlatmak için dokun' : 'tap to crack';
+  applyLanguageToUI(); // <- update visible texts immediately
 }
 
-let revealed = false;
-let countdownTimer = null;
+function applyLanguageToUI() {
+  // update revealed fortune text if present
+  const ft = document.getElementById('fortuneText');
+  if (ft && currentData?.fortune) {
+    ft.textContent =
+      currentData.fortune?.[currentLang] ||
+      currentData.fortune?.en ||
+      currentData.fortune?.tr ||
+      '…';
+  }
+  // update "REFRESH IN" label
+  const labelRefresh = document.getElementById('labelRefresh');
+  if (labelRefresh) labelRefresh.textContent = (currentLang === 'tr') ? 'YENİLEMEYE KALAN' : 'REFRESH IN';
+
+  // update hint under the countdown (only if we already revealed)
+  const hintEl = document.getElementById('hint');
+  if (hintEl && currentData) {
+    hintEl.textContent = (currentLang === 'tr')
+      ? 'Her cihaz için 24 saatte bir fal.'
+      : 'One fortune per device per 24 hours.';
+  }
+}
 
 function fmt(ms) {
   if (ms < 0) ms = 0;
@@ -103,17 +129,24 @@ function loadLocal() {
 }
 
 function revealFromData(data) {
+  currentData = data; // <- remember it so we can switch languages later
   const cookieStage = document.getElementById('cookieStage');
-  cookieStage?.remove(); // ⟵ ensure cookie page is gone
+  cookieStage?.remove();
   injectReveal();
-  document.getElementById('fortuneText').textContent =
-    data.fortune?.[currentLang] || data.fortune?.en || data.fortune?.tr || '…';
+
+  // render with current language
+  applyLanguageToUI();
+
+  // start countdown & hint
   startCountdown(data.serverNow, data.refreshAt);
   const hintEl = document.getElementById('hint');
-  hintEl.textContent = (currentLang === 'tr')
-    ? 'Her cihaz için 24 saatte bir fal.'
-    : 'One fortune per device per 24 hours.';
-  saveLocal(data); // keep local copy in case server cache resets
+  if (hintEl) {
+    hintEl.textContent = (currentLang === 'tr')
+      ? 'Her cihaz için 24 saatte bir fal.'
+      : 'One fortune per device per 24 hours.';
+  }
+
+  saveLocal(data);
 }
 
 async function getPeek() {
@@ -144,10 +177,9 @@ async function crackAndReveal() {
 
   const proceed = async () => {
     try {
-      const data = await postFortune();  // generate-or-return (server also enforces 24h)
+      const data = await postFortune();
       revealFromData(data);
     } catch {
-      // graceful error state
       cookieStage?.remove();
       injectReveal();
       document.getElementById('fortuneText').textContent =
@@ -172,24 +204,24 @@ document.getElementById('cookie')?.addEventListener('keydown', (e) => {
 (async () => {
   setLangUI(currentLang);
 
-  // Hide the cookie until we decide which view to show (prevents flash)
+  // Hide cookie until we decide which view to show (prevents flash)
   const cookieStage = document.getElementById('cookieStage');
   if (cookieStage) cookieStage.style.display = 'none';
 
-  // 1) Prefer server cache
+  // Prefer server cache
   const server = await getPeek();
   if (server) {
     revealFromData(server);
     return;
   }
 
-  // 2) If server lost cache but local has a valid fortune, use it
+  // Fallback to local cache if still valid
   const local = loadLocal();
   if (local && new Date(local.refreshAt).getTime() > Date.now()) {
     revealFromData(local);
     return;
   }
 
-  // 3) No fortune: show cookie
+  // Else show cookie
   if (cookieStage) cookieStage.style.display = '';
 })();
