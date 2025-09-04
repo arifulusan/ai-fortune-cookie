@@ -253,7 +253,7 @@ async function crackAndReveal() {
   const word = document.querySelector('.word');
   word?.classList.add('force-crack');
 
-  // wait ~ animation, then fetch
+  // wait for the crack animation, then fetch
   setTimeout(async () => {
     try{
       const data = await postFortune();
