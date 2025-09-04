@@ -1,39 +1,110 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Daily Fortune</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fortuny — Pastel Crayon Hero</title>
+
+  <!-- Distinct display fonts (each letter uses a different one) -->
+  <link href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Bebas+Neue&family=Space+Mono:wght@700&family=Permanent+Marker&family=Rubik+Mono+One&family=Stardos+Stencil:wght@700&family=Fredericka+the+Great&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="fortuny.css" />
 </head>
 <body>
+  <!-- Riot-of-color background layers -->
+  <div class="bg bg--clouds"></div>
+  <div class="bg bg--conic"></div>
+  <div class="bg bg--speckles"></div>
+  <div class="bg bg--vignette"></div>
+
+  <!-- HUD: language & brand -->
   <div class="hud-left">
-    <div class="lang" role="tablist" aria-label="Language">
-      <button id="btnTR" role="tab" aria-pressed="false">TR</button>
-      <button id="btnEN" role="tab" aria-pressed="true">EN</button>
+    <div class="lang">
+      <button id="btnTR" aria-pressed="false">TR</button>
+      <button id="btnEN" aria-pressed="true">EN</button>
     </div>
-    <div class="brand-chip">🥠 Fortuny Your Daily Fortune</div>
+    <div class="brand-chip">🥠 Fortuny</div>
   </div>
 
+  <!-- Main -->
   <main class="wrap">
-    <section id="cookieStage" class="stage">
-      <div class="scene">
-        <div id="cookie" class="cookie cookie-bob" role="button" aria-label="Open fortune" tabindex="0">
-          <div class="paper-slip" aria-hidden="true"></div>
-          <div class="half left"><img src="assets/fortune-cookie.png" alt="Fortune cookie mascot left half"/></div>
-          <div class="half right"><img src="assets/fortune-cookie.png" alt="Fortune cookie mascot right half"/></div>
-          <div class="crumbs">
-            <div class="crumb c1"></div>
-            <div class="crumb c2"></div>
-            <div class="crumb c3"></div>
-            <div class="crumb c4"></div>
+
+    <!-- HERO / crackable word -->
+    <section id="heroCard" class="card hidden">
+      <div class="word can-crack" aria-label="FORTUNY" title="Tap or press Enter to crack">
+        <!-- base: visible by default -->
+        <div class="word-base">
+          <div class="tiles">
+            <div class="tile clip-1"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile clip-2"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile clip-3"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile clip-4"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile clip-5"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile clip-6"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile clip-7"><span class="crayon f7" data-ch="Y">Y</span></div>
           </div>
         </div>
-        <div id="tapText" class="hintTap">tap to crack</div>
+
+        <!-- LEFT half overlay -->
+        <div class="word-half left">
+          <div class="tiles">
+            <div class="tile clip-1"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile clip-2"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile clip-3"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile clip-4"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile clip-5"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile clip-6"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile clip-7"><span class="crayon f7" data-ch="Y">Y</span></div>
+          </div>
+        </div>
+
+        <!-- RIGHT half overlay -->
+        <div class="word-half right">
+          <div class="tiles">
+            <div class="tile clip-1"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile clip-2"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile clip-3"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile clip-4"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile clip-5"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile clip-6"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile clip-7"><span class="crayon f7" data-ch="Y">Y</span></div>
+          </div>
+        </div>
+
+        <!-- crack glint + crumbs -->
+        <span class="split-crack" aria-hidden="true"></span>
+        <span class="crumb" style="--x:-18px"></span>
+        <span class="crumb" style="--x:-6px"></span>
+        <span class="crumb" style="--x:8px"></span>
+        <span class="crumb" style="--x:20px"></span>
       </div>
+
+      <p id="tapText" class="hint">tap to crack</p>
     </section>
+
+    <!-- REVEAL -->
+    <section id="revealStage" class="card hidden">
+      <article>
+        <div class="topline">
+          <span id="streakBadge" class="streak" data-count="1">🔥 1-day streak</span>
+        </div>
+        <div class="paper">
+          <div id="fortuneText" class="fortune">…</div>
+        </div>
+        <div class="actions">
+          <button id="btnCopy" class="btn">Copy</button>
+          <button id="btnShare" class="btn primary">Share</button>
+        </div>
+        <div class="countdown-wrap">
+          <span id="labelRefresh" class="label">REFRESH IN</span>
+          <span id="countdown" class="countdown">--:--:--</span>
+        </div>
+        <div id="hint" class="hint">One fortune per device per 24 hours.</div>
+      </article>
+    </section>
+
   </main>
 
-  <script src="main.js" defer></script>
+  <script src="fortuny.js"></script>
 </body>
 </html>
