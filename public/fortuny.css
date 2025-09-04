@@ -54,7 +54,6 @@ body {
 
 /* =========================
    Riot-of-color background
-   (from your original)
    ========================= */
 .bg { position: fixed; inset: 0; pointer-events: none; }
 .bg--clouds {
@@ -136,7 +135,7 @@ body {
   pointer-events: none;
 }
 
-/* Irregular cut shapes (ragged newspaper edges) */
+/* Irregular cut shapes */
 .clip-1 { clip-path: polygon(5% 6%, 96% 4%, 94% 95%, 6% 97%); }
 .clip-2 { clip-path: polygon(4% 8%, 97% 5%, 95% 94%, 3% 92%); }
 .clip-3 { clip-path: polygon(3% 6%, 98% 7%, 93% 96%, 5% 93%); }
@@ -145,7 +144,7 @@ body {
 .clip-6 { clip-path: polygon(4% 7%, 96% 6%, 94% 93%, 6% 95%); }
 .clip-7 { clip-path: polygon(3% 5%, 97% 4%, 95% 96%, 5% 94%); }
 
-/* Pastel tile colors + crayon mix vars per tile */
+/* Pastel tile colors + per-tile mix vars */
 .tile:nth-child(1){ --bg:#FFC9A9; --cr1:#E3A386; --cr2:#FFE1D1; background: var(--bg); }
 .tile:nth-child(2){ --bg:#FFB8CC; --cr1:#E39EB4; --cr2:#FFD6E6; background: var(--bg); }
 .tile:nth-child(3){ --bg:#D9C3FF; --cr1:#B7A0E3; --cr2:#EADBFF; background: var(--bg); }
@@ -154,48 +153,42 @@ body {
 .tile:nth-child(6){ --bg:#FFE88A; --cr1:#E0CA6E; --cr2:#FFF3BE; background: var(--bg); }
 .tile:nth-child(7){ --bg:#BEE3FF; --cr1:#9FC4E3; --cr2:#D8F0FF; background: var(--bg); }
 
-/* Distinct fonts per letter */
-.f1{ font-family: 'Rubik Mono One', sans-serif; }
-.f2{ font-family: 'Abril Fatface', serif; }
-.f3{ font-family: 'Space Mono', monospace; }
-.f4{ font-family: 'Permanent Marker', cursive; }
-.f5{ font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.5px; }
-.f6{ font-family: 'Stardos Stencil', serif; }
-.f7{ font-family: 'Fredericka the Great', serif; }
+/* Use one cohesive display font */
+.f1,.f2,.f3,.f4,.f5,.f6,.f7{
+  font-family: 'Fredoka', 'Rubik', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  letter-spacing: .4px;
+}
 
-/* Crayon lettering */
+/* Softer, waxy lettering */
 .crayon{
   position: relative;
   font-weight: 900;
-  font-size: clamp(28px, 6vw, 64px);
+  font-size: clamp(34px, 7vw, 72px);
   line-height: 1;
-  letter-spacing: -0.5px;
+  letter-spacing: .2px;
   background-clip: text; -webkit-background-clip: text; color: transparent;
-  -webkit-text-stroke: 0.6px rgba(17,24,39,.08);
+  -webkit-text-stroke: .8px rgba(17,24,39,.06);
   background-image:
-    repeating-linear-gradient(12deg, var(--cr1) 0 3px, var(--cr2) 3px 6px, var(--cr1) 6px 9px),
-    repeating-linear-gradient(-9deg, rgba(255,255,255,.16) 0 1px, rgba(255,255,255,0) 1px 3px);
-  filter: saturate(1.02) contrast(.98);
+    linear-gradient(0deg, rgba(255,255,255,.2), rgba(255,255,255,0)),
+    linear-gradient(0deg, var(--cr1), var(--cr2));
+  filter: saturate(1.02);
 }
 .crayon::before{
   content: attr(data-ch);
   position: absolute; inset: 0;
-  -webkit-text-stroke: 2px rgba(17,24,39,.05);
-  filter: blur(.3px);
-  opacity: .7;
-  color: transparent;
-  pointer-events: none;
+  -webkit-text-stroke: 1.4px rgba(17,24,39,.06);
+  opacity: .8; color: transparent; pointer-events: none;
 }
 .crayon::after{
   content: attr(data-ch);
   position: absolute; inset: 0;
   color: transparent;
   background-clip: text; -webkit-background-clip: text;
-  mix-blend-mode: overlay; opacity: .45;
+  mix-blend-mode: overlay; opacity: .25;
   background-image:
-    radial-gradient(rgba(255,255,255,.25) .7px, transparent .7px),
-    radial-gradient(rgba(0,0,0,.10) .7px, transparent .7px);
-  background-size: 4px 4px, 3px 3px;
+    radial-gradient(rgba(255,255,255,.22) .8px, transparent .8px),
+    radial-gradient(rgba(0,0,0,.08) .8px, transparent .8px);
+  background-size: 4px 4px, 6px 6px;
   background-position: 0 0, 1px 1px;
   pointer-events: none;
 }
@@ -233,7 +226,7 @@ body {
 .can-crack:hover .word-half.left  { animation: crack-left 620ms cubic-bezier(.2,.8,.2,1) both; }
 .can-crack:hover .word-half.right { animation: crack-right 620ms cubic-bezier(.2,.8,.2,1) both; }
 
-/* force-crack on click (JS toggles this) */
+/* trigger with JS on click */
 .word.force-crack .word-base { opacity:0; }
 .word.force-crack .word-half { opacity:1; }
 .word.force-crack .word-half.left  { animation: crack-left 620ms cubic-bezier(.2,.8,.2,1) both; }
@@ -260,46 +253,4 @@ body {
 .can-crack:hover .crumb,
 .word.force-crack .crumb{ animation: crumb-drop 680ms ease-out both; }
 
-/* =========================
-   Reveal card (streak/timer)
-   ========================= */
-.topline{
-  display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;
-}
-.streak{
-  display:inline-flex; align-items:center; gap:6px;
-  padding:6px 12px; border-radius:999px; font-weight:800; letter-spacing:.02em;
-  background:#FFF0DC; border:1px solid #F5D3A9; color:#7A501E;
-}
-.paper{
-  background:#fff; color:#0d1320; border-radius:14px; padding:24px 24px;
-  display:grid; place-items:center; min-height:140px; position:relative; overflow:hidden;
-  border:1px solid #e8eaf2;
-}
-.fortune{font-weight:900;text-align:center;font-size: clamp(28px, 6vw, 44px); line-height:1.15; letter-spacing:.01em; margin:8px 0;}
-.countdown-wrap{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:16px;color:#6B7280}
-.countdown{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#111827;font-size:1.05rem}
-.label{opacity:.9;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem}
-.actions{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:14px; }
-.btn{
-  appearance:none; border:1px solid rgba(17,24,39,.12); background:#fff; color:#111827;
-  padding:10px 14px; border-radius:10px; font-weight:800; letter-spacing:.02em; cursor:pointer;
-  transition:.15s transform ease, .15s box-shadow ease;
-}
-.btn:hover{ transform: translateY(-1px); box-shadow:0 8px 20px rgba(17,24,39,.10); }
-.btn.primary{ background:#111827; color:#fff; border-color:transparent; }
-
-/* Accessible, calmer experience */
-@media (prefers-reduced-motion: reduce){
-  .bg--conic { animation: none; }
-  .can-crack:hover .word-half.left,
-  .can-crack:hover .word-half.right,
-  .can-crack:hover .split-crack,
-  .can-crack:hover .crumb,
-  .word.force-crack .word-half.left,
-  .word.force-crack .word-half.right,
-  .word.force-crack .split-crack,
-  .word.force-crack .crumb { animation: none; }
-  .can-crack:hover .word-base,
-  .word.force-crack .word-base { opacity: 1; }
-}
+/* ==*
