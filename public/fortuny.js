@@ -1,4 +1,4 @@
-// Pastel UI + Streak + Share/Copy + Skip-cookie-if-already-opened
+// Fortuny: hero crack + reveal with 24h lock, streak, share/copy, language
 
 const LS = {
   lang: 'fc_lang_pref',
@@ -16,9 +16,9 @@ let currentLang =
 
 let revealed = false;
 let countdownTimer = null;
-let currentData = null; // holds latest server/local data
+let currentData = null;
 
-// ---------- i18n helpers ----------
+// i18n
 function t(key){
   const tr = {
     tap: 'çatlatmak için dokun',
@@ -55,7 +55,6 @@ function setLangUI(lang) {
   if (tapText) tapText.textContent = t('tap');
   applyLanguageToUI();
 }
-
 function applyLanguageToUI() {
   const ft = document.getElementById('fortuneText');
   if (ft && currentData?.fortune) {
@@ -75,23 +74,20 @@ function applyLanguageToUI() {
   if (copyBtn) copyBtn.textContent = t('copy');
   if (shareBtn) shareBtn.textContent = t('share');
 
-  // streak badge text (keeps number)
   const streakBadge = document.getElementById('streakBadge');
   if (streakBadge && streakBadge.dataset.count) {
     const n = Number(streakBadge.dataset.count);
     streakBadge.textContent = `🔥 ${t('streak')(n)}`;
-    streakBadge.dataset.count = String(n);
   }
 }
 
-// ---------- time & streak ----------
+// streak
 function dayKey(iso, tz = TZ){
   const d = new Date(iso);
   const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' });
-  return fmt.format(d); // YYYY-MM-DD
+  return fmt.format(d);
 }
 function daysBetween(dayA, dayB){
-  // treat day strings as UTC dates to compute delta
   const a = new Date(dayA+'T00:00:00Z').getTime();
   const b = new Date(dayB+'T00:00:00Z').getTime();
   return Math.round((b - a)/(24*3600*1000));
@@ -115,7 +111,7 @@ function updateStreak(serverNowISO){
   return count;
 }
 
-// ---------- countdown ----------
+// countdown
 function fmt(ms) {
   if (ms < 0) ms = 0;
   const s = Math.floor(ms / 1000);
@@ -138,43 +134,14 @@ function startCountdown(serverNowISO, refreshAtISO) {
     countdownEl.textContent = fmt(left);
     if (left <= 0) {
       clearInterval(countdownTimer);
-      hintEl.textContent = t('unlocked');
+      if (hintEl) hintEl.textContent = t('unlocked');
     }
   }
   tick();
   countdownTimer = setInterval(tick, 1000);
 }
 
-// ---------- DOM builders ----------
-function injectReveal() {
-  let section = document.getElementById('revealStage');
-  if (!section) {
-    const wrap = document.querySelector('main.wrap') || document.querySelector('main');
-    section = document.createElement('section');
-    section.className = 'stage';
-    section.id = 'revealStage';
-    section.innerHTML = `
-      <article class="card">
-        <div class="topline">
-          <span id="streakBadge" class="streak" data-count="1">🔥 ${t('streak')(1)}</span>
-        </div>
-        <div class="paper"><div id="fortuneText" class="fortune"></div></div>
-        <div class="actions">
-          <button id="btnCopy" class="btn">${t('copy')}</button>
-          <button id="btnShare" class="btn primary">${t('share')}</button>
-        </div>
-        <div class="countdown-wrap">
-          <span id="labelRefresh" class="label">${t('refresh_in')}</span>
-          <span id="countdown" class="countdown">--:--:--</span>
-        </div>
-        <div id="hint" class="hint"></div>
-      </article>`;
-    wrap.appendChild(section);
-  }
-  return section;
-}
-
-// ---------- network ----------
+// network
 async function getPeek() {
   try {
     const r = await fetch('/api/fortune', { cache: 'no-store' });
@@ -191,7 +158,7 @@ async function postFortune() {
   return j;
 }
 
-// ---------- reveal flow ----------
+// local cache
 function saveLocal(data) {
   try {
     if (data?.fortune && data?.refreshAt) {
@@ -211,6 +178,7 @@ function loadLocal() {
   } catch { return null; }
 }
 
+// actions
 function wireActions(){
   const copyBtn = document.getElementById('btnCopy');
   const shareBtn = document.getElementById('btnShare');
@@ -223,7 +191,6 @@ function wireActions(){
       copyBtn.textContent = t('copied');
       setTimeout(()=> copyBtn.textContent = old, 1200);
     } catch {
-      // fallback: select & copy
       const ta = document.createElement('textarea');
       ta.value = text; document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); } catch {}
@@ -236,22 +203,15 @@ function wireActions(){
 
   shareBtn?.addEventListener('click', async () => {
     const text = document.getElementById('fortuneText')?.textContent || '';
-    const shareData = {
-      title: 'Daily Fortune',
-      text,
-      url: location.origin
-    };
+    const shareData = { title: 'Fortuny', text, url: location.origin };
     if (navigator.share) {
       try {
         await navigator.share(shareData);
         const old = shareBtn.textContent;
         shareBtn.textContent = t('shared');
         setTimeout(()=> shareBtn.textContent = t('share'), 1200);
-      } catch {
-        // ignore cancel
-      }
+      } catch {}
     } else {
-      // fallback to copy
       try { await navigator.clipboard.writeText(`${text}\n${location.origin}`); } catch {}
       const old = shareBtn.textContent;
       shareBtn.textContent = t('copied');
@@ -260,81 +220,82 @@ function wireActions(){
   });
 }
 
-function revealFromData(data) {
+// reveal
+function showReveal(data){
   currentData = data;
-  // compute and show streak
+  const hero = document.getElementById('heroCard');
+  const reveal = document.getElementById('revealStage');
+
+  // streak
   const count = updateStreak(data.serverNow);
-  injectReveal();
   const badge = document.getElementById('streakBadge');
   if (badge) { badge.dataset.count = String(count); badge.textContent = `🔥 ${t('streak')(count)}`; }
 
-  // remove cookie screen
-  document.getElementById('cookieStage')?.remove();
-
-  // render texts
+  // texts
   applyLanguageToUI();
-  // countdown & hint
+
+  // show panels
+  hero?.classList.add('hidden');
+  reveal?.classList.remove('hidden');
+
+  // countdown
   startCountdown(data.serverNow, data.refreshAt);
   const hintEl = document.getElementById('hint');
   if (hintEl) hintEl.textContent = t('hint');
 
-  // actions
+  // actions + persist
   wireActions();
-  // persist
   saveLocal(data);
 }
 
 async function crackAndReveal() {
   if (revealed) return; revealed = true;
+  const word = document.querySelector('.word');
+  word?.classList.add('force-crack');
 
-  const cookieEl = document.getElementById('cookie');
-  const cookieStage = document.getElementById('cookieStage');
-  cookieEl.classList.add('crack');
-
-  const proceed = async () => {
-    try {
+  // wait ~ animation, then fetch
+  setTimeout(async () => {
+    try{
       const data = await postFortune();
-      revealFromData(data);
-    } catch {
-      cookieStage?.remove();
-      injectReveal();
+      showReveal(data);
+    }catch{
+      // graceful error: still show reveal shell
+      const reveal = document.getElementById('revealStage');
+      document.getElementById('heroCard')?.classList.add('hidden');
+      reveal?.classList.remove('hidden');
       document.getElementById('fortuneText').textContent =
-        (currentLang === 'tr') ? 'Şu an açılamadı. Tekrar deneyin.' : 'Couldn’t open the fortune. Try again.';
+        currentLang === 'tr' ? 'Şu an açılamadı. Tekrar deneyin.' : 'Couldn’t open the fortune. Try again.';
       wireActions();
     }
-  };
-
-  const onAnimEnd = () => { cookieEl.removeEventListener('animationend', onAnimEnd, true); proceed(); };
-  cookieEl.addEventListener('animationend', onAnimEnd, true);
-  setTimeout(() => { cookieEl.removeEventListener('animationend', onAnimEnd, true); proceed(); }, 1200);
+  }, 640);
 }
 
-// ---------- events ----------
+// events
 document.getElementById('btnTR')?.addEventListener('click', () => setLangUI('tr'));
 document.getElementById('btnEN')?.addEventListener('click', () => setLangUI('en'));
-document.getElementById('cookie')?.addEventListener('click', crackAndReveal);
-document.getElementById('cookie')?.addEventListener('keydown', (e) => {
+
+document.querySelector('.word')?.addEventListener('click', crackAndReveal);
+document.querySelector('.word')?.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' || e.key === ' ') crackAndReveal();
 });
 
-// ---------- init ----------
+// init
 (async () => {
+  // prevent flash: hide both, then decide
+  document.getElementById('heroCard')?.classList.add('hidden');
+  document.getElementById('revealStage')?.classList.add('hidden');
+
   setLangUI(currentLang);
+  document.getElementById('tapText').textContent = t('tap');
 
-  // Prevent cookie flash while we decide
-  const cookieStage = document.getElementById('cookieStage');
-  if (cookieStage) cookieStage.style.display = 'none';
-
-  // Prefer server cache
+  // prefer server cache
   const server = await getPeek();
-  if (server) { revealFromData(server); return; }
+  if (server) { showReveal(server); return; }
 
-  // Local fallback (if server cache was lost)
+  // fallback to local cache
   const local = loadLocal();
-  if (local && new Date(local.refreshAt).getTime() > Date.now()) {
-    revealFromData(local); return;
-  }
+  if (local && new Date(local.refreshAt).getTime() > Date.now()) { showReveal(local); return; }
 
-  // Else show cookie
-  if (cookieStage) cookieStage.style.display = '';
+  // else show hero
+  document.getElementById('heroCard')?.classList.remove('hidden');
 })();
