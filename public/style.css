@@ -318,3 +318,68 @@ body {
   .can-crack:hover .word-base,
   .word.force-crack .word-base { opacity: 1; }
 }
+
+/* =========================
+   NO-TILES VARIANT (letters only)
+   ========================= */
+.word.no-tiles .tiles{
+  /* switch from grid tiles to a tight letter row */
+  display:flex;
+  justify-content:center;
+  gap: clamp(10px, 2.2vw, 24px);
+  max-width:none;
+}
+
+.word.no-tiles .tile{
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  aspect-ratio: auto;           /* shrink to letter */
+  padding: 0;
+}
+.word.no-tiles .tile::before{ display:none !important; }
+
+/* kill the old ragged paper shapes */
+.word.no-tiles .clip-1,
+.word.no-tiles .clip-2,
+.word.no-tiles .clip-3,
+.word.no-tiles .clip-4,
+.word.no-tiles .clip-5,
+.word.no-tiles .clip-6,
+.word.no-tiles .clip-7{ clip-path: none !important; }
+
+/* Give letters their own soft color (pastel gradient) */
+.word.no-tiles .tile:nth-child(1){ --fill1:#FFD7C2; --fill2:#FFB899; }
+.word.no-tiles .tile:nth-child(2){ --fill1:#FFC7DA; --fill2:#FFA6C2; }
+.word.no-tiles .tile:nth-child(3){ --fill1:#E8DCFF; --fill2:#C9B5FF; }
+.word.no-tiles .tile:nth-child(4){ --fill1:#D3EEFF; --fill2:#A5D8FF; }
+.word.no-tiles .tile:nth-child(5){ --fill1:#D7F6E7; --fill2:#B9EAD3; }
+.word.no-tiles .tile:nth-child(6){ --fill1:#FFF3B8; --fill2:#FFE084; }
+.word.no-tiles .tile:nth-child(7){ --fill1:#D6EBFF; --fill2:#ADD6FF; }
+
+/* Larger, cleaner letters (uses your current font choice) */
+.word.no-tiles .crayon{
+  font-size: clamp(48px, 9vw, 106px);
+  letter-spacing: .05em;
+  -webkit-text-stroke: 1px rgba(17,24,39,.12);
+  color: transparent;
+  background-clip: text; -webkit-background-clip: text;
+  background-image:
+    /* subtle emboss highlight */
+    linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.60) 40%, rgba(0,0,0,.12) 100%),
+    /* per-letter pastel fill */
+    linear-gradient(180deg, var(--fill1, #ffffff), var(--fill2, #eeeeee));
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.85),
+    0 10px 22px rgba(17,24,39,.10);
+}
+
+/* A tiny playful wobble (optional) */
+.word.no-tiles .tile:nth-child(1){ transform: rotate(-2deg) translateY(1px); }
+.word.no-tiles .tile:nth-child(2){ transform: rotate(1.5deg) translateY(0px); }
+.word.no-tiles .tile:nth-child(3){ transform: rotate(-1deg) translateY(2px); }
+.word.no-tiles .tile:nth-child(4){ transform: rotate(0.5deg); }
+.word.no-tiles .tile:nth-child(5){ transform: rotate(-1.2deg) translateY(1px); }
+.word.no-tiles .tile:nth-child(6){ transform: rotate(1.2deg); }
+.word.no-tiles .tile:nth-child(7){ transform: rotate(-0.6deg) translateY(1px); }
