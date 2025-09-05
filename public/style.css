@@ -19,8 +19,9 @@ body {
       border:1px solid rgba(17,24,39,.12); border-radius:12px; overflow:hidden; box-shadow:0 10px 20px rgba(17,24,39,.10);}
 .lang button{border:0;background:transparent;color:#111827;padding:10px 14px;cursor:pointer;font-weight:800;letter-spacing:.02em}
 .lang button[aria-pressed="true"]{background:rgba(17,24,39,.06);outline:1px solid rgba(17,24,39,.12);}
-.brand-chip{padding:8px 12px; background:rgba(255,255,255,.6); border:1px solid rgba(17,24,39,.12);
-  border-radius:12px; font-weight:800; letter-spacing:.02em; backdrop-filter: blur(8px); }
+
+/* Remove the top-left Fortuny chip per request */
+.brand-chip{ display:none; }
 
 /* Layout */
 .wrap {
@@ -153,13 +154,15 @@ body {
 .tile:nth-child(6){ --bg:#FFE88A; --cr1:#E0CA6E; --cr2:#FFF3BE; background: var(--bg); }
 .tile:nth-child(7){ --bg:#BEE3FF; --cr1:#9FC4E3; --cr2:#D8F0FF; background: var(--bg); }
 
-/* Use one cohesive display font */
+/* ========= Fredoka updates ========= */
+
+/* Use one cohesive display font for hero letters */
 .f1,.f2,.f3,.f4,.f5,.f6,.f7{
   font-family: 'Fredoka', 'Rubik', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   letter-spacing: .4px;
 }
 
-/* Softer, waxy lettering */
+/* Softer, waxy lettering for the hero */
 .crayon{
   position: relative;
   font-weight: 900;
@@ -253,4 +256,73 @@ body {
 .can-crack:hover .crumb,
 .word.force-crack .crumb{ animation: crumb-drop 680ms ease-out both; }
 
-/* ==*
+/* =========================
+   Reveal card (streak/timer) + brand line
+   ========================= */
+.topline{
+  display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;
+}
+.streak{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 12px; border-radius:999px; font-weight:900; letter-spacing:.02em;
+  background:#FFF0DC; border:1px solid #F5D3A9; color:#7A501E;
+  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+}
+
+/* NEW: brand line above the paper (smaller Fortuny word) */
+.brandline{
+  display:flex; align-items:center; justify-content:center;
+  margin: 6px 0 14px 0;
+}
+.brandline .brand{
+  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  font-weight: 900;
+  font-size: clamp(22px, 3.8vw, 36px);
+  letter-spacing: .5px;
+  line-height: 1;
+  /* multicolor gradient inspired by tiles */
+  background: linear-gradient(90deg,#FFC9A9,#FFB8CC,#D9C3FF,#AEE0FF,#BDEED6,#FFE88A,#BEE3FF);
+  background-clip: text; -webkit-background-clip: text; color: transparent;
+  -webkit-text-stroke: 0.6px rgba(17,24,39,.08);
+  filter: saturate(1.05);
+}
+
+.paper{
+  background:#fff; color:#0d1320; border-radius:14px; padding:24px 24px;
+  display:grid; place-items:center; min-height:140px; position:relative; overflow:hidden;
+  border:1px solid #e8eaf2;
+}
+.fortune{
+  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  font-weight:900;text-align:center;font-size: clamp(28px, 6vw, 44px); line-height:1.15; letter-spacing:.2px; margin:8px 0;
+}
+.countdown-wrap{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:16px;color:#6B7280}
+.countdown{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#111827;font-size:1.05rem}
+.label{
+  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+  font-weight:700; opacity:.9;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem
+}
+.actions{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:14px; }
+.btn{
+  appearance:none; border:1px solid rgba(17,24,39,.12); background:#fff; color:#111827;
+  padding:10px 14px; border-radius:10px; font-weight:900; letter-spacing:.02em; cursor:pointer;
+  transition:.15s transform ease, .15s box-shadow ease;
+  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
+}
+.btn:hover{ transform: translateY(-1px); box-shadow:0 8px 20px rgba(0,0,0,.10); }
+.btn.primary{ background:#111827; color:#fff; border-color:transparent; }
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .bg--conic { animation: none; }
+  .can-crack:hover .word-half.left,
+  .can-crack:hover .word-half.right,
+  .can-crack:hover .split-crack,
+  .can-crack:hover .crumb,
+  .word.force-crack .word-half.left,
+  .word.force-crack .word-half.right,
+  .word.force-crack .split-crack,
+  .word.force-crack .crumb { animation: none; }
+  .can-crack:hover .word-base,
+  .word.force-crack .word-base { opacity: 1; }
+}
