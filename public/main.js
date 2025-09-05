@@ -1,4 +1,4 @@
-// Fortuny: hero crack + reveal with 24h lock, streak, share/copy, language
+// Modern Fortuny client — view transitions, URL lang, streak/confetti, a11y
 
 const LS = {
   lang: 'fc_lang_pref',
@@ -9,8 +9,11 @@ const LS = {
   streakDay: 'fc_streak_last_day'
 };
 const TZ = 'Europe/Istanbul';
+const hero = document.getElementById('heroCard');
+const reveal = document.getElementById('revealStage');
 
 let currentLang =
+  new URLSearchParams(location.search).get('lang') ||
   localStorage.getItem(LS.lang) ||
   ((navigator.language || 'en').toLowerCase().startsWith('tr') ? 'tr' : 'en');
 
@@ -46,7 +49,14 @@ function t(key){
   return typeof dict[key] === 'function' ? dict[key] : dict[key];
 }
 
-function setLangUI(lang) {
+function announce(msg){
+  const sr = document.getElementById('sr-status');
+  if(!sr) return;
+  sr.textContent = '';
+  requestAnimationFrame(()=> sr.textContent = msg);
+}
+
+function setLangUI(lang, pushToURL=true) {
   currentLang = lang;
   localStorage.setItem(LS.lang, lang);
   document.getElementById('btnTR')?.setAttribute('aria-pressed', String(lang === 'tr'));
@@ -54,6 +64,12 @@ function setLangUI(lang) {
   const tapText = document.getElementById('tapText');
   if (tapText) tapText.textContent = t('tap');
   applyLanguageToUI();
+
+  if (pushToURL) {
+    const url = new URL(location.href);
+    url.searchParams.set('lang', lang);
+    history.replaceState({}, '', url);
+  }
 }
 function applyLanguageToUI() {
   const ft = document.getElementById('fortuneText');
@@ -65,15 +81,12 @@ function applyLanguageToUI() {
   }
   const labelRefresh = document.getElementById('labelRefresh');
   if (labelRefresh) labelRefresh.textContent = t('refresh_in');
-
   const hintEl = document.getElementById('hint');
   if (hintEl && currentData) hintEl.textContent = t('hint');
-
   const copyBtn = document.getElementById('btnCopy');
   const shareBtn = document.getElementById('btnShare');
   if (copyBtn) copyBtn.textContent = t('copy');
   if (shareBtn) shareBtn.textContent = t('share');
-
   const streakBadge = document.getElementById('streakBadge');
   if (streakBadge && streakBadge.dataset.count) {
     const n = Number(streakBadge.dataset.count);
@@ -81,7 +94,7 @@ function applyLanguageToUI() {
   }
 }
 
-// streak
+// streak (returns {count, increased})
 function dayKey(iso, tz = TZ){
   const d = new Date(iso);
   const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit' });
@@ -96,19 +109,18 @@ function updateStreak(serverNowISO){
   const today = dayKey(serverNowISO);
   const last = localStorage.getItem(LS.streakDay);
   let count = parseInt(localStorage.getItem(LS.streakCount) || '0', 10);
+  let increased = false;
 
-  if (!last) {
-    count = 1;
-  } else if (today === last) {
-    // same day, keep
-  } else {
+  if (!last) { count = 1; increased = true; }
+  else if (today !== last) {
     const delta = daysBetween(last, today);
-    count = (delta === 1) ? Math.max(1, count + 1) : 1;
+    if (delta === 1) { count = Math.max(1, count + 1); increased = true; }
+    else { count = 1; increased = true; }
   }
 
   localStorage.setItem(LS.streakDay, today);
   localStorage.setItem(LS.streakCount, String(count));
-  return count;
+  return { count, increased };
 }
 
 // countdown
@@ -135,13 +147,14 @@ function startCountdown(serverNowISO, refreshAtISO) {
     if (left <= 0) {
       clearInterval(countdownTimer);
       if (hintEl) hintEl.textContent = t('unlocked');
+      announce(t('unlocked'));
     }
   }
   tick();
   countdownTimer = setInterval(tick, 1000);
 }
 
-// network
+// networking
 async function getPeek() {
   try {
     const r = await fetch('/api/fortune', { cache: 'no-store' });
@@ -185,84 +198,96 @@ function wireActions(){
 
   copyBtn?.addEventListener('click', async () => {
     const text = document.getElementById('fortuneText')?.textContent || '';
-    try {
-      await navigator.clipboard.writeText(text);
-      const old = copyBtn.textContent;
-      copyBtn.textContent = t('copied');
-      setTimeout(()=> copyBtn.textContent = old, 1200);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = text; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); } catch {}
-      document.body.removeChild(ta);
-      const old = copyBtn.textContent;
-      copyBtn.textContent = t('copied');
-      setTimeout(()=> copyBtn.textContent = old, 1200);
+    try { await navigator.clipboard.writeText(text); } catch {
+      const ta=document.createElement('textarea'); ta.value=text; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy');}catch{} ta.remove();
     }
+    const old=copyBtn.textContent; copyBtn.textContent = t('copied'); announce(t('copied'));
+    setTimeout(()=> copyBtn.textContent = old, 1200);
   });
 
   shareBtn?.addEventListener('click', async () => {
     const text = document.getElementById('fortuneText')?.textContent || '';
-    const shareData = { title: 'Fortuny', text, url: location.origin };
+    const url = new URL(location.href); url.searchParams.set('lang', currentLang);
+    const shareData = { title: 'Fortuny', text, url: url.toString() };
     if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        const old = shareBtn.textContent;
-        shareBtn.textContent = t('shared');
-        setTimeout(()=> shareBtn.textContent = t('share'), 1200);
-      } catch {}
+      try { await navigator.share(shareData); const old=shareBtn.textContent; shareBtn.textContent=t('shared'); setTimeout(()=> shareBtn.textContent=t('share'), 1200);} catch {}
     } else {
-      try { await navigator.clipboard.writeText(`${text}\n${location.origin}`); } catch {}
-      const old = shareBtn.textContent;
-      shareBtn.textContent = t('copied');
-      setTimeout(()=> shareBtn.textContent = t('share'), 1200);
+      try { await navigator.clipboard.writeText(`${text}\n${url.toString()}`); } catch {}
+      const old=shareBtn.textContent; shareBtn.textContent=t('copied'); setTimeout(()=> shareBtn.textContent=t('share'), 1200);
     }
   });
+}
+
+// confetti (tiny, no libs)
+function confetti(x=window.innerWidth/2, y=window.innerHeight/2){
+  const n=28; for(let i=0;i<n;i++){
+    const p=document.createElement('i');
+    Object.assign(p.style,{
+      position:'fixed',left:`${x}px`,top:`${y}px`,width:'6px',height:'10px',
+      background:`hsl(${(i*13)%360} 90% 60%)`,
+      transform:`translate(-50%,-50%) rotate(${Math.random()*360}deg)`,
+      borderRadius:'2px',pointerEvents:'none',zIndex:9999,
+      transition:'transform 700ms ease-out, opacity 700ms ease-out', opacity:1
+    });
+    document.body.appendChild(p);
+    requestAnimationFrame(()=>{
+      p.style.transform += ` translate(${(Math.random()-0.5)*240}px, ${80+Math.random()*140}px)`;
+      p.style.opacity = 0;
+    });
+    setTimeout(()=>p.remove(), 800);
+  }
+}
+
+// panel swap with View Transitions
+function swapPanels(showReveal) {
+  const doSwap = () => {
+    hero.classList.toggle('hidden', showReveal);
+    reveal.classList.toggle('hidden', !showReveal);
+    reveal.toggleAttribute('inert', !showReveal);
+  };
+  if (document.startViewTransition) {
+    document.startViewTransition(doSwap);
+  } else {
+    doSwap();
+  }
 }
 
 // reveal
 function showReveal(data){
   currentData = data;
-  const hero = document.getElementById('heroCard');
-  const reveal = document.getElementById('revealStage');
 
   // streak
-  const count = updateStreak(data.serverNow);
+  const { count, increased } = updateStreak(data.serverNow);
   const badge = document.getElementById('streakBadge');
   if (badge) { badge.dataset.count = String(count); badge.textContent = `🔥 ${t('streak')(count)}`; }
+  if (increased) confetti(window.innerWidth/2, window.innerHeight/2);
 
-  // texts
   applyLanguageToUI();
 
-  // show panels
-  hero?.classList.add('hidden');
-  reveal?.classList.remove('hidden');
+  // swap hero -> reveal
+  swapPanels(true);
 
   // countdown
   startCountdown(data.serverNow, data.refreshAt);
-  const hintEl = document.getElementById('hint');
-  if (hintEl) hintEl.textContent = t('hint');
+  document.getElementById('hint').textContent = t('hint');
 
-  // actions + persist
   wireActions();
   saveLocal(data);
+
+  // focus
+  document.getElementById('btnCopy')?.focus();
 }
 
 async function crackAndReveal() {
   if (revealed) return; revealed = true;
-  const word = document.querySelector('.word');
-  word?.classList.add('force-crack');
+  document.querySelector('.word')?.classList.add('force-crack');
 
-  // wait for the crack animation, then fetch
   setTimeout(async () => {
     try{
       const data = await postFortune();
       showReveal(data);
     }catch{
-      // graceful error: still show reveal shell
-      const reveal = document.getElementById('revealStage');
-      document.getElementById('heroCard')?.classList.add('hidden');
-      reveal?.classList.remove('hidden');
+      swapPanels(true);
       document.getElementById('fortuneText').textContent =
         currentLang === 'tr' ? 'Şu an açılamadı. Tekrar deneyin.' : 'Couldn’t open the fortune. Try again.';
       wireActions();
@@ -273,29 +298,24 @@ async function crackAndReveal() {
 // events
 document.getElementById('btnTR')?.addEventListener('click', () => setLangUI('tr'));
 document.getElementById('btnEN')?.addEventListener('click', () => setLangUI('en'));
-
-document.querySelector('.word')?.addEventListener('click', crackAndReveal);
-document.querySelector('.word')?.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' || e.key === ' ') crackAndReveal();
-});
+const wordEl = document.querySelector('.word');
+wordEl?.addEventListener('click', crackAndReveal);
+wordEl?.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') crackAndReveal(); });
 
 // init
 (async () => {
-  // prevent flash: hide both, then decide
-  document.getElementById('heroCard')?.classList.add('hidden');
-  document.getElementById('revealStage')?.classList.add('hidden');
-
-  setLangUI(currentLang);
+  // set language from URL/LS
+  setLangUI(currentLang, /*pushToURL*/ false);
   document.getElementById('tapText').textContent = t('tap');
 
-  // prefer server cache
+  // server first
   const server = await getPeek();
   if (server) { showReveal(server); return; }
 
-  // fallback to local cache
+  // local fallback
   const local = loadLocal();
   if (local && new Date(local.refreshAt).getTime() > Date.now()) { showReveal(local); return; }
 
   // else show hero
-  document.getElementById('heroCard')?.classList.remove('hidden');
+  swapPanels(false);
 })();
