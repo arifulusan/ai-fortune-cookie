@@ -1,3 +1,10 @@
+/* -------------------------------------------------------
+   Fortuny — Paytone One edition (embossed letters)
+   ------------------------------------------------------- */
+
+/* Load fonts (safe even if you also have a <link> in HTML) */
+@import url('https://fonts.googleapis.com/css2?family=Paytone+One&family=Rubik:wght@900&display=swap');
+
 /* Page scaffold */
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -145,56 +152,46 @@ body {
 .clip-6 { clip-path: polygon(4% 7%, 96% 6%, 94% 93%, 6% 95%); }
 .clip-7 { clip-path: polygon(3% 5%, 97% 4%, 95% 96%, 5% 94%); }
 
-/* Pastel tile colors + per-tile mix vars */
-.tile:nth-child(1){ --bg:#FFC9A9; --cr1:#E3A386; --cr2:#FFE1D1; background: var(--bg); }
-.tile:nth-child(2){ --bg:#FFB8CC; --cr1:#E39EB4; --cr2:#FFD6E6; background: var(--bg); }
-.tile:nth-child(3){ --bg:#D9C3FF; --cr1:#B7A0E3; --cr2:#EADBFF; background: var(--bg); }
-.tile:nth-child(4){ --bg:#AEE0FF; --cr1:#8EBFE3; --cr2:#D2F0FF; background: var(--bg); }
-.tile:nth-child(5){ --bg:#BDEED6; --cr1:#9DD2B9; --cr2:#D8FAE7; background: var(--bg); }
-.tile:nth-child(6){ --bg:#FFE88A; --cr1:#E0CA6E; --cr2:#FFF3BE; background: var(--bg); }
-.tile:nth-child(7){ --bg:#BEE3FF; --cr1:#9FC4E3; --cr2:#D8F0FF; background: var(--bg); }
+/* Pastel tile colors */
+.tile:nth-child(1){ --bg:#FFC9A9; background: var(--bg); }
+.tile:nth-child(2){ --bg:#FFB8CC; background: var(--bg); }
+.tile:nth-child(3){ --bg:#D9C3FF; background: var(--bg); }
+.tile:nth-child(4){ --bg:#AEE0FF; background: var(--bg); }
+.tile:nth-child(5){ --bg:#BDEED6; background: var(--bg); }
+.tile:nth-child(6){ --bg:#FFE88A; background: var(--bg); }
+.tile:nth-child(7){ --bg:#BEE3FF; background: var(--bg); }
 
-/* ========= Fredoka updates ========= */
+/* ========= Paytone One updates ========= */
 
-/* Use one cohesive display font for hero letters */
-.f1,.f2,.f3,.f4,.f5,.f6,.f7{
-  font-family: 'Fredoka', 'Rubik', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+/* Use one cohesive display font for hero letters, mini brand, and fortune text */
+.f1,.f2,.f3,.f4,.f5,.f6,.f7,
+.brandline .brand,
+.fortune {
+  font-family: 'Paytone One', 'Rubik', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   letter-spacing: .4px;
+  font-weight: 400; /* Paytone One ships as a heavy 400 */
 }
 
-/* Softer, waxy lettering for the hero */
+/* Clean embossed letter styling (no crayon streaks) */
 .crayon{
   position: relative;
-  font-weight: 900;
   font-size: clamp(34px, 7vw, 72px);
   line-height: 1;
-  letter-spacing: .2px;
-  background-clip: text; -webkit-background-clip: text; color: transparent;
-  -webkit-text-stroke: .8px rgba(17,24,39,.06);
-  background-image:
-    linear-gradient(0deg, rgba(255,255,255,.2), rgba(255,255,255,0)),
-    linear-gradient(0deg, var(--cr1), var(--cr2));
-  filter: saturate(1.02);
-}
-.crayon::before{
-  content: attr(data-ch);
-  position: absolute; inset: 0;
-  -webkit-text-stroke: 1.4px rgba(17,24,39,.06);
-  opacity: .8; color: transparent; pointer-events: none;
-}
-.crayon::after{
-  content: attr(data-ch);
-  position: absolute; inset: 0;
+  letter-spacing: .1px;
+
   color: transparent;
+  -webkit-text-stroke: 0.9px rgba(17,24,39,.12);
   background-clip: text; -webkit-background-clip: text;
-  mix-blend-mode: overlay; opacity: .25;
   background-image:
-    radial-gradient(rgba(255,255,255,.22) .8px, transparent .8px),
-    radial-gradient(rgba(0,0,0,.08) .8px, transparent .8px);
-  background-size: 4px 4px, 6px 6px;
-  background-position: 0 0, 1px 1px;
-  pointer-events: none;
+    linear-gradient(180deg, rgba(255,255,255,.90) 0%, rgba(255,255,255,.62) 38%, rgba(0,0,0,.12) 100%);
+
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.85),
+    0 8px 18px rgba(17,24,39,.10);
+  filter: saturate(.98) contrast(1.02);
 }
+.crayon::before,
+.crayon::after{ content:none; } /* remove any old “crayon” texture layers */
 
 /* ============== Whole-word crack animation ============== */
 .word-base { transition: opacity .28s ease; }
@@ -266,21 +263,18 @@ body {
   display:inline-flex; align-items:center; gap:6px;
   padding:6px 12px; border-radius:999px; font-weight:900; letter-spacing:.02em;
   background:#FFF0DC; border:1px solid #F5D3A9; color:#7A501E;
-  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
 }
 
-/* NEW: brand line above the paper (smaller Fortuny word) */
+/* Mini brand above the paper (smaller Fortuny word) */
 .brandline{
   display:flex; align-items:center; justify-content:center;
   margin: 6px 0 14px 0;
 }
 .brandline .brand{
-  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
-  font-weight: 900;
+  font-weight: 400; /* Paytone One */
   font-size: clamp(22px, 3.8vw, 36px);
   letter-spacing: .5px;
   line-height: 1;
-  /* multicolor gradient inspired by tiles */
   background: linear-gradient(90deg,#FFC9A9,#FFB8CC,#D9C3FF,#AEE0FF,#BDEED6,#FFE88A,#BEE3FF);
   background-clip: text; -webkit-background-clip: text; color: transparent;
   -webkit-text-stroke: 0.6px rgba(17,24,39,.08);
@@ -293,21 +287,19 @@ body {
   border:1px solid #e8eaf2;
 }
 .fortune{
-  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
-  font-weight:900;text-align:center;font-size: clamp(28px, 6vw, 44px); line-height:1.15; letter-spacing:.2px; margin:8px 0;
+  font-weight:400; /* Paytone One’s heavy cut renders at 400 */
+  text-align:center;
+  font-size: clamp(28px, 6vw, 44px);
+  line-height:1.15; letter-spacing:.2px; margin:8px 0;
 }
 .countdown-wrap{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:16px;color:#6B7280}
 .countdown{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#111827;font-size:1.05rem}
-.label{
-  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
-  font-weight:700; opacity:.9;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem
-}
+.label{opacity:.9;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem}
 .actions{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:14px; }
 .btn{
   appearance:none; border:1px solid rgba(17,24,39,.12); background:#fff; color:#111827;
   padding:10px 14px; border-radius:10px; font-weight:900; letter-spacing:.02em; cursor:pointer;
   transition:.15s transform ease, .15s box-shadow ease;
-  font-family: 'Fredoka','Rubik',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;
 }
 .btn:hover{ transform: translateY(-1px); box-shadow:0 8px 20px rgba(0,0,0,.10); }
 .btn.primary{ background:#111827; color:#fff; border-color:transparent; }
