@@ -1,312 +1,185 @@
-/* -------------------------------------------------------
-   Fortuny — Paytone One edition (embossed letters)
-   ------------------------------------------------------- */
+/* ========== Base tokens ========== */
+:root{
+  --ink:#111827; --muted:#6B7280; --paper:#fff; --surface:rgba(255,255,255,.75);
+  --radius:28px; --radius-inner:16px;
+  --shadow-3:0 30px 70px rgba(17,24,39,.18); --focus:#2563eb;
 
-/* Load fonts (safe even if you also have a <link> in HTML) */
-@import url('https://fonts.googleapis.com/css2?family=Paytone+One&family=Rubik:wght@900&display=swap');
-
-/* Page scaffold */
-* { box-sizing: border-box; }
-html, body { height: 100%; }
-body {
-  margin: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  background: #FFFDF8;
-  overflow: hidden;
+  /* pastel rainbow for hero letters */
+  --rb1:#FF7A88;  /* warm red */
+  --rb2:#FFB070;  /* orange */
+  --rb3:#FFE07A;  /* yellow */
+  --rb4:#8FE29A;  /* green */
+  --rb5:#6FD9F6;  /* cyan */
+  --rb6:#8A8FF5;  /* blue-violet */
+  --rb7:#F59BD9;  /* pink */
 }
-
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;background:#FFFDF8;color:var(--ink);overflow:hidden;
+     font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial}
 .hidden{display:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0)}
+:where(button,[role="button"]):focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:12px}
 
 /* HUD */
-.hud-left{
-  position:fixed; top:16px; left:16px; z-index:30;
-  display:flex; gap:10px; align-items:center;
-}
-.lang{display:inline-flex;background:rgba(255,255,255,.6);backdrop-filter: blur(8px);
-      border:1px solid rgba(17,24,39,.12); border-radius:12px; overflow:hidden; box-shadow:0 10px 20px rgba(17,24,39,.10);}
-.lang button{border:0;background:transparent;color:#111827;padding:10px 14px;cursor:pointer;font-weight:800;letter-spacing:.02em}
-.lang button[aria-pressed="true"]{background:rgba(17,24,39,.06);outline:1px solid rgba(17,24,39,.12);}
-
-/* Remove the top-left Fortuny chip per request */
-.brand-chip{ display:none; }
+.hud-left{position:fixed;top:16px;left:16px;z-index:30;display:flex;gap:10px}
+.lang{display:inline-flex;background:rgba(255,255,255,.6);backdrop-filter:blur(8px);
+      border:1px solid rgba(17,24,39,.12);border-radius:12px;overflow:hidden;box-shadow:0 10px 20px rgba(17,24,39,.10)}
+.lang button{border:0;background:transparent;color:#111827;padding:10px 14px;cursor:pointer;font-weight:800}
+.lang button[aria-pressed="true"]{background:rgba(17,24,39,.06);outline:1px solid rgba(17,24,39,.12)}
 
 /* Layout */
-.wrap {
-  position: relative;
-  z-index: 10;
-  min-height: 100%;
-  display: grid;
-  place-items: center;
-  padding: 24px;
+.wrap{position:relative;z-index:10;min-height:100%;display:grid;place-items:center;padding:24px}
+.card{position:relative;width:min(960px,92vw);border-radius:var(--radius);background:var(--surface);
+      box-shadow:var(--shadow-3);backdrop-filter:blur(8px);border:1px solid rgba(17,24,39,.06);
+      padding:clamp(20px,4vw,40px);container-type:inline-size}
+.hint{text-align:center;margin:14px auto 4px;color:#374151;opacity:.85;font-size:14px}
+
+/* Backgrounds */
+.bg{position:fixed;inset:0;pointer-events:none}
+.bg--clouds{z-index:-30;background:#FFFDF8;background-image:
+  radial-gradient(46% 40% at 10% 18%, #FFD1B3 0%, rgba(255,209,179,0) 72%),
+  radial-gradient(50% 44% at 88% 14%, #F5B0E0 0%, rgba(245,176,224,0) 74%),
+  radial-gradient(52% 46% at 14% 86%, #AEDDFF 0%, rgba(174,221,255,0) 76%),
+  radial-gradient(56% 48% at 86% 84%, #BFF2D9 0%, rgba(191,242,217,0) 78%),
+  radial-gradient(36% 32% at 50% 12%, #FFF082 0%, rgba(255,240,130,0) 70%),
+  radial-gradient(34% 30% at 50% 88%, #D6C4FF 0%, rgba(214,196,255,0) 68%),
+  radial-gradient(90% 80% at 50% 50%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 60%)}
+.bg--conic{z-index:-20;background-image:conic-gradient(from 0deg at 50% 50%,
+  hsla(330,85%,70%,.28) 0deg, hsla(45,95%,70%,.28) 90deg, hsla(190,85%,70%,.28) 180deg, hsla(265,85%,75%,.28) 270deg, hsla(330,85%,70%,.28) 360deg);
+  filter:blur(48px) saturate(1.15);mix-blend-mode:screen;opacity:.45;animation:spinHue 80s linear infinite}
+.bg--speckles{z-index:-12;background-image:radial-gradient(hsla(0,0%,100%,.22) 1px, transparent 1.2px),
+  radial-gradient(hsla(210,30%,10%,.10) 1px, transparent 1.2px);background-size:3px 3px, 4px 4px;
+  background-position:0 0, 2px 2px;mix-blend-mode:overlay;opacity:.22}
+.bg--vignette{z-index:-10;background:radial-gradient(60% 60% at 50% 40%, rgba(0,0,0,.04), transparent 60%)}
+@keyframes spinHue{to{transform:rotate(360deg)}}
+
+/* HERO — letters-only word (Baloo 2 rainbow) */
+.word{position:relative;width:min(720px,90%);margin:0 auto;cursor:pointer}
+.tiles{display:flex;justify-content:center;gap:clamp(10px,2.2vw,24px)}
+.no-tiles .tile{background:transparent;border:0;box-shadow:none;aspect-ratio:auto;padding:0}
+.no-tiles .tile::before{display:none}
+
+/* Baloo 2 for hero letters */
+.f1,.f2,.f3,.f4,.f5,.f6,.f7{
+  font-family: 'Baloo 2', 'Fredoka', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: .02em;
 }
 
-.card {
-  position: relative;
-  width: min(960px, 92vw);
-  border-radius: 28px;
-  background: rgba(255,255,255,0.75);
-  box-shadow: 0 30px 70px rgba(17,24,39,.18);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(17,24,39,.06);
-  padding: clamp(20px, 4vw, 40px);
-}
+/* Per-letter rainbow assignment */
+.word.no-tiles .tile:nth-child(1){ --start:var(--rb1); --stop:var(--rb2); }
+.word.no-tiles .tile:nth-child(2){ --start:var(--rb2); --stop:var(--rb3); }
+.word.no-tiles .tile:nth-child(3){ --start:var(--rb3); --stop:var(--rb4); }
+.word.no-tiles .tile:nth-child(4){ --start:var(--rb4); --stop:var(--rb5); }
+.word.no-tiles .tile:nth-child(5){ --start:var(--rb5); --stop:var(--rb6); }
+.word.no-tiles .tile:nth-child(6){ --start:var(--rb6); --stop:var(--rb7); }
+.word.no-tiles .tile:nth-child(7){ --start:var(--rb7); --stop:var(--rb1); }
 
-.hint {
-  text-align: center;
-  margin: 14px auto 4px;
-  color: #374151;
-  opacity: .85;
-  font-size: 14px;
-}
-
-/* =========================
-   Riot-of-color background
-   ========================= */
-.bg { position: fixed; inset: 0; pointer-events: none; }
-.bg--clouds {
-  z-index: -30;
-  background-color: #FFFDF8;
-  background-image:
-    radial-gradient(46% 40% at 10% 18%, #FFD1B3 0%, rgba(255,209,179,0) 72%),
-    radial-gradient(50% 44% at 88% 14%, #F5B0E0 0%, rgba(245,176,224,0) 74%),
-    radial-gradient(52% 46% at 14% 86%, #AEDDFF 0%, rgba(174,221,255,0) 76%),
-    radial-gradient(56% 48% at 86% 84%, #BFF2D9 0%, rgba(191,242,217,0) 78%),
-    radial-gradient(36% 32% at 50% 12%, #FFF082 0%, rgba(255,240,130,0) 70%),
-    radial-gradient(34% 30% at 50% 88%, #D6C4FF 0%, rgba(214,196,255,0) 68%),
-    radial-gradient(90% 80% at 50% 50%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 60%);
-  filter: saturate(1.25) contrast(1.03);
-}
-.bg--conic {
-  z-index: -20;
-  background-image: conic-gradient(
-    from 0deg at 50% 50%,
-    hsla(330,85%,70%,.28) 0deg,
-    hsla(45,95%,70%,.28) 90deg,
-    hsla(190,85%,70%,.28) 180deg,
-    hsla(265,85%,75%,.28) 270deg,
-    hsla(330,85%,70%,.28) 360deg
-  );
-  filter: blur(48px) saturate(1.15);
-  mix-blend-mode: screen;
-  opacity: .45;
-  animation: spinHue 80s linear infinite;
-}
-.bg--speckles {
-  z-index: -12;
-  background-image:
-    radial-gradient(hsla(0,0%,100%,.22) 1px, transparent 1.2px),
-    radial-gradient(hsla(210,30%,10%,.10) 1px, transparent 1.2px);
-  background-size: 3px 3px, 4px 4px;
-  background-position: 0 0, 2px 2px;
-  mix-blend-mode: overlay;
-  opacity: .22;
-}
-.bg--vignette {
-  z-index: -10;
-  background: radial-gradient(60% 60% at 50% 40%, rgba(0,0,0,.04), transparent 60%);
-}
-@keyframes spinHue { to { transform: rotate(360deg); } }
-
-/* ======================
-   Word / tiles structure
-   ====================== */
-.word { position: relative; width: min(720px, 90%); margin: 0 auto; }
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: clamp(8px, 1.6vw, 14px);
-  max-width: 720px;
-  margin-inline: auto;
-}
-
-/* Tile looks */
-.tile {
-  position: relative;
-  aspect-ratio: 0.9 / 1.1;
-  display: grid;
-  place-items: center;
-  border-radius: 18px;
-  box-shadow: 0 12px 26px rgba(17,24,39,.12);
-  filter: drop-shadow(0 4px 8px rgba(17,24,39,.10));
-  border: 1px solid rgba(17,24,39,.06);
-  overflow: visible;
-}
-.tile::before{
-  content:"";
-  position: absolute;
-  inset: -8px;
-  border: 3px solid rgba(55,65,81,.28);
-  border-radius: 20px;
-  clip-path: inherit;
-  box-shadow: 0 0 0 8px rgba(255,255,255,.65);
-  pointer-events: none;
-}
-
-/* Irregular cut shapes */
-.clip-1 { clip-path: polygon(5% 6%, 96% 4%, 94% 95%, 6% 97%); }
-.clip-2 { clip-path: polygon(4% 8%, 97% 5%, 95% 94%, 3% 92%); }
-.clip-3 { clip-path: polygon(3% 6%, 98% 7%, 93% 96%, 5% 93%); }
-.clip-4 { clip-path: polygon(6% 5%, 95% 3%, 96% 94%, 4% 95%); }
-.clip-5 { clip-path: polygon(5% 4%, 97% 8%, 92% 97%, 7% 92%); }
-.clip-6 { clip-path: polygon(4% 7%, 96% 6%, 94% 93%, 6% 95%); }
-.clip-7 { clip-path: polygon(3% 5%, 97% 4%, 95% 96%, 5% 94%); }
-
-/* Pastel tile colors */
-.tile:nth-child(1){ --bg:#FFC9A9; background: var(--bg); }
-.tile:nth-child(2){ --bg:#FFB8CC; background: var(--bg); }
-.tile:nth-child(3){ --bg:#D9C3FF; background: var(--bg); }
-.tile:nth-child(4){ --bg:#AEE0FF; background: var(--bg); }
-.tile:nth-child(5){ --bg:#BDEED6; background: var(--bg); }
-.tile:nth-child(6){ --bg:#FFE88A; background: var(--bg); }
-.tile:nth-child(7){ --bg:#BEE3FF; background: var(--bg); }
-
-/* ========= Paytone One updates ========= */
-
-/* Use one cohesive display font for hero letters, mini brand, and fortune text */
-.f1,.f2,.f3,.f4,.f5,.f6,.f7,
-.brandline .brand,
-.fortune {
-  font-family: 'Paytone One', 'Rubik', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  letter-spacing: .4px;
-  font-weight: 400; /* Paytone One ships as a heavy 400 */
-}
-
-/* Clean embossed letter styling (no crayon streaks) */
+/* Glossy rainbow letters */
 .crayon{
   position: relative;
-  font-size: clamp(34px, 7vw, 72px);
+  font-size: clamp(56px, 10vw, 110px);
   line-height: 1;
-  letter-spacing: .1px;
-
   color: transparent;
-  -webkit-text-stroke: 0.9px rgba(17,24,39,.12);
+  -webkit-text-stroke: 0.6px rgba(17,24,39,.10);
   background-clip: text; -webkit-background-clip: text;
   background-image:
-    linear-gradient(180deg, rgba(255,255,255,.90) 0%, rgba(255,255,255,.62) 38%, rgba(0,0,0,.12) 100%);
-
-  text-shadow:
-    0 1px 0 rgba(255,255,255,.85),
-    0 8px 18px rgba(17,24,39,.10);
-  filter: saturate(.98) contrast(1.02);
+    linear-gradient(180deg, rgba(255,255,255,.95) 0%, rgba(255,255,255,.62) 45%, rgba(0,0,0,.10) 100%),
+    linear-gradient(90deg, var(--start, #FF7A88), var(--stop, #F59BD9));
+  text-shadow: 0 1px 0 rgba(255,255,255,.85), 0 10px 22px rgba(17,24,39,.10);
+  transition: transform .12s ease;
 }
-.crayon::before,
-.crayon::after{ content:none; } /* remove any old “crayon” texture layers */
+.crayon:hover{ transform: translateY(-2px) scale(1.02); }
+.crayon::before, .crayon::after { content: none !important; }
 
-/* ============== Whole-word crack animation ============== */
-.word-base { transition: opacity .28s ease; }
-.word-half { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
-.word-half.left  { clip-path: polygon(0% 0%, 50% 0%, 48% 12%, 52% 24%, 46% 40%, 52% 55%, 48% 70%, 50% 88%, 0% 100%); }
-.word-half.right { clip-path: polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%, 52% 88%, 48% 70%, 54% 55%, 48% 40%, 52% 24%, 50% 12%); }
+/* crack animation & effects */
+.word-base{transition:opacity .28s ease}
+.word-half{position:absolute;inset:0;opacity:0;pointer-events:none}
+.can-crack:hover .word-base{opacity:0}
+.can-crack:hover .word-half{opacity:1}
+@keyframes crack-left{0%{transform:translate(0,0) rotate(0)}45%{transform:translate(-6px,-3px) rotate(-4deg)}100%{transform:translate(-16px,8px) rotate(-8deg)}}
+@keyframes crack-right{0%{transform:translate(0,0) rotate(0)}45%{transform:translate(6px,-3px) rotate(4deg)}100%{transform:translate(16px,8px) rotate(8deg)}}
+.can-crack:hover .word-half.left{animation:crack-left 620ms cubic-bezier(.2,.8,.2,1) both}
+.can-crack:hover .word-half.right{animation:crack-right 620ms cubic-bezier(.2,.8,.2,1) both}
+.word.force-crack .word-base{opacity:0}.word.force-crack .word-half{opacity:1}
+.word.force-crack .word-half.left{animation:crack-left 620ms cubic-bezier(.2,.8,.2,1) both}
+.word.force-crack .word-half.right{animation:crack-right 620ms cubic-bezier(.2,.8,.2,1) both}
+.split-crack{position:absolute;left:50%;top:6%;width:2px;height:88%;transform:translateX(-50%);
+  background:linear-gradient(to bottom, rgba(17,24,39,0), rgba(17,24,39,.35) 50%, rgba(17,24,39,0)); border-radius:2px; box-shadow:0 0 6px rgba(255,255,255,.85); opacity:0; mix-blend-mode:multiply}
+@keyframes crack-glint{0%{opacity:0}20%{opacity:.9}100%{opacity:0}}
+.can-crack:hover .split-crack,.word.force-crack .split-crack{animation:crack-glint 620ms ease-out both}
+.crumb{position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:2px;background:rgba(17,24,39,.28);transform:translate(-50%,-50%);opacity:0}
+@keyframes crumb-drop{0%{opacity:0;transform:translate(var(--x,0px), -4px) scale(.9)}15%{opacity:1}100%{opacity:0;transform:translate(var(--x,0px), 22px) scale(.6)}}
+.can-crack:hover .crumb,.word.force-crack .crumb{animation:crumb-drop 680ms ease-out both}
 
-.can-crack:hover .word-base { opacity: 0; }
-.can-crack:hover .word-half { opacity: 1; }
-
-@keyframes crack-left {
-  0%   { transform: translate(0,0) rotate(0deg); }
-  45%  { transform: translate(-6px,-3px) rotate(-4deg); }
-  100% { transform: translate(-16px,8px) rotate(-8deg); }
-}
-@keyframes crack-right {
-  0%   { transform: translate(0,0) rotate(0deg); }
-  45%  { transform: translate(6px,-3px) rotate(4deg); }
-  100% { transform: translate(16px,8px) rotate(8deg); }
-}
-@keyframes crack-glint {
-  0% { opacity: 0; }
-  20% { opacity: .9; }
-  100% { opacity: 0; }
-}
-@keyframes crumb-drop {
-  0%   { opacity: 0; transform: translate(var(--x,0px), -4px) scale(.9); }
-  15%  { opacity: 1; }
-  100% { opacity: 0; transform: translate(var(--x,0px), 22px) scale(.6); }
-}
-
-.can-crack:hover .word-half.left  { animation: crack-left 620ms cubic-bezier(.2,.8,.2,1) both; }
-.can-crack:hover .word-half.right { animation: crack-right 620ms cubic-bezier(.2,.8,.2,1) both; }
-
-/* trigger with JS on click */
-.word.force-crack .word-base { opacity:0; }
-.word.force-crack .word-half { opacity:1; }
-.word.force-crack .word-half.left  { animation: crack-left 620ms cubic-bezier(.2,.8,.2,1) both; }
-.word.force-crack .word-half.right { animation: crack-right 620ms cubic-bezier(.2,.8,.2,1) both; }
-
-.split-crack{
-  position: absolute; left: 50%; top: 6%; width: 2px; height: 88%;
-  transform: translateX(-50%);
-  background: linear-gradient(to bottom, rgba(17,24,39,0), rgba(17,24,39,.35) 50%, rgba(17,24,39,0));
-  border-radius: 2px;
-  box-shadow: 0 0 6px rgba(255,255,255,.85);
-  opacity: 0; mix-blend-mode: multiply;
-}
-.can-crack:hover .split-crack,
-.word.force-crack .split-crack{ animation: crack-glint 620ms ease-out both; }
-
-.crumb{
-  position: absolute; left: 50%; top: 50%;
-  width: 6px; height: 6px; border-radius: 2px;
-  background: rgba(17,24,39,.28);
-  transform: translate(-50%, -50%);
-  opacity: 0;
-}
-.can-crack:hover .crumb,
-.word.force-crack .crumb{ animation: crumb-drop 680ms ease-out both; }
-
-/* =========================
-   Reveal card (streak/timer) + brand line
-   ========================= */
-.topline{
-  display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;
-}
+/* REVEAL — bright, airy */
+.topline{display:flex;justify-content:center}
 .streak{
-  display:inline-flex; align-items:center; gap:6px;
-  padding:6px 12px; border-radius:999px; font-weight:900; letter-spacing:.02em;
-  background:#FFF0DC; border:1px solid #F5D3A9; color:#7A501E;
+  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;
+  font-family:'Fredoka',ui-sans-serif; font-weight:900; letter-spacing:.02em;
+  background:#FFF6E8;border:1px solid #FAD7B0;color:#7A501E
 }
 
-/* Mini brand above the paper (smaller Fortuny word) */
-.brandline{
-  display:flex; align-items:center; justify-content:center;
-  margin: 6px 0 14px 0;
-}
+/* mini brand */
+.brandline{display:flex;align-items:center;justify-content:center;margin:6px 0 10px}
 .brandline .brand{
-  font-weight: 400; /* Paytone One */
-  font-size: clamp(22px, 3.8vw, 36px);
-  letter-spacing: .5px;
-  line-height: 1;
-  background: linear-gradient(90deg,#FFC9A9,#FFB8CC,#D9C3FF,#AEE0FF,#BDEED6,#FFE88A,#BEE3FF);
-  background-clip: text; -webkit-background-clip: text; color: transparent;
-  -webkit-text-stroke: 0.6px rgba(17,24,39,.08);
-  filter: saturate(1.05);
+  font-family:'Fredoka',ui-sans-serif; font-weight:900; letter-spacing:.3px;
+  font-size:clamp(20px,3.4vw,30px);
+  background:linear-gradient(90deg,#FFC9A9,#FFB8CC,#D9C3FF,#AEE0FF,#BDEED6,#FFE88A,#BEE3FF);
+  -webkit-background-clip:text;background-clip:text;color:transparent; -webkit-text-stroke:.6px rgba(17,24,39,.08)
 }
 
+/* pastel chip above the paper */
+.chip{
+  display:inline-flex;align-items:center;justify-content:center;
+  margin:0 auto 10px; padding:6px 12px;border-radius:999px;
+  font-family:'Fredoka',ui-sans-serif; font-weight:800; letter-spacing:.02em;
+  background:#F7F2FF;border:1px solid #E6DAFF;color:#5A3FB3; width:max-content
+}
+
+/* paper with candy border */
 .paper{
-  background:#fff; color:#0d1320; border-radius:14px; padding:24px 24px;
-  display:grid; place-items:center; min-height:140px; position:relative; overflow:hidden;
-  border:1px solid #e8eaf2;
+  position:relative; border-radius:18px; padding:28px 24px; background:var(--paper);
+  border:1px solid rgba(17,24,39,.06);
+  box-shadow:0 14px 36px rgba(17,24,39,.12);
+  overflow:hidden
 }
+.paper::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; padding:2px;
+  background:linear-gradient(135deg,#FFC9A9,#FFB8CC,#D9C3FF,#AEE0FF,#BDEED6,#FFE88A,#BEE3FF);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; opacity:.6
+}
+
+/* the fortune text */
 .fortune{
-  font-weight:400; /* Paytone One’s heavy cut renders at 400 */
-  text-align:center;
-  font-size: clamp(28px, 6vw, 44px);
-  line-height:1.15; letter-spacing:.2px; margin:8px 0;
+  font-family:'Fredoka','Rubik',ui-sans-serif; font-weight:900;
+  font-size:clamp(28px,6vw,44px); line-height:1.15; letter-spacing:.2px;
+  text-align:center; color:#0d1320; margin:4px auto; max-width:40ch
 }
-.countdown-wrap{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:16px;color:#6B7280}
-.countdown{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;color:#111827;font-size:1.05rem}
-.label{opacity:.9;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem}
-.actions{ display:flex; gap:10px; align-items:center; justify-content:center; margin-top:14px; }
+
+/* buttons + timer */
+.actions{display:flex;gap:10px;justify-content:center;margin-top:12px}
 .btn{
-  appearance:none; border:1px solid rgba(17,24,39,.12); background:#fff; color:#111827;
-  padding:10px 14px; border-radius:10px; font-weight:900; letter-spacing:.02em; cursor:pointer;
-  transition:.15s transform ease, .15s box-shadow ease;
+  appearance:none;border:1px solid rgba(17,24,39,.12);background:#fff;color:#111827;
+  padding:10px 14px;border-radius:10px;font-family:'Fredoka',ui-sans-serif;font-weight:900;letter-spacing:.02em;cursor:pointer;
+  transition:.15s transform ease,.15s box-shadow ease
 }
-.btn:hover{ transform: translateY(-1px); box-shadow:0 8px 20px rgba(0,0,0,.10); }
-.btn.primary{ background:#111827; color:#fff; border-color:transparent; }
+.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(0,0,0,.10)}
+.btn.primary{background:#111827;color:#fff;border-color:transparent}
+.countdown-wrap{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:12px;color:var(--muted)}
+.countdown{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#111827;font-size:1.05rem}
+.label{font-family:'Fredoka',ui-sans-serif;font-weight:800;opacity:.9;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem}
+
+/* container tweaks */
+@container (max-width:520px){
+  .fortune{font-size:clamp(22px,7vw,28px);max-width:32ch}
+  .actions{flex-wrap:wrap}
+}
 
 /* Reduced motion */
-@media (prefers-reduced-motion: reduce){
-  .bg--conic { animation: none; }
+@media(prefers-reduced-motion:reduce){
+  .bg--conic{animation:none}
   .can-crack:hover .word-half.left,
   .can-crack:hover .word-half.right,
   .can-crack:hover .split-crack,
@@ -314,72 +187,6 @@ body {
   .word.force-crack .word-half.left,
   .word.force-crack .word-half.right,
   .word.force-crack .split-crack,
-  .word.force-crack .crumb { animation: none; }
-  .can-crack:hover .word-base,
-  .word.force-crack .word-base { opacity: 1; }
+  .word.force-crack .crumb{animation:none}
+  .can-crack:hover .word-base,.word.force-crack .word-base{opacity:1}
 }
-
-/* =========================
-   NO-TILES VARIANT (letters only)
-   ========================= */
-.word.no-tiles .tiles{
-  /* switch from grid tiles to a tight letter row */
-  display:flex;
-  justify-content:center;
-  gap: clamp(10px, 2.2vw, 24px);
-  max-width:none;
-}
-
-.word.no-tiles .tile{
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  filter: none !important;
-  aspect-ratio: auto;           /* shrink to letter */
-  padding: 0;
-}
-.word.no-tiles .tile::before{ display:none !important; }
-
-/* kill the old ragged paper shapes */
-.word.no-tiles .clip-1,
-.word.no-tiles .clip-2,
-.word.no-tiles .clip-3,
-.word.no-tiles .clip-4,
-.word.no-tiles .clip-5,
-.word.no-tiles .clip-6,
-.word.no-tiles .clip-7{ clip-path: none !important; }
-
-/* Give letters their own soft color (pastel gradient) */
-.word.no-tiles .tile:nth-child(1){ --fill1:#FFD7C2; --fill2:#FFB899; }
-.word.no-tiles .tile:nth-child(2){ --fill1:#FFC7DA; --fill2:#FFA6C2; }
-.word.no-tiles .tile:nth-child(3){ --fill1:#E8DCFF; --fill2:#C9B5FF; }
-.word.no-tiles .tile:nth-child(4){ --fill1:#D3EEFF; --fill2:#A5D8FF; }
-.word.no-tiles .tile:nth-child(5){ --fill1:#D7F6E7; --fill2:#B9EAD3; }
-.word.no-tiles .tile:nth-child(6){ --fill1:#FFF3B8; --fill2:#FFE084; }
-.word.no-tiles .tile:nth-child(7){ --fill1:#D6EBFF; --fill2:#ADD6FF; }
-
-/* Larger, cleaner letters (uses your current font choice) */
-.word.no-tiles .crayon{
-  font-size: clamp(48px, 9vw, 106px);
-  letter-spacing: .05em;
-  -webkit-text-stroke: 1px rgba(17,24,39,.12);
-  color: transparent;
-  background-clip: text; -webkit-background-clip: text;
-  background-image:
-    /* subtle emboss highlight */
-    linear-gradient(180deg, rgba(255,255,255,.92) 0%, rgba(255,255,255,.60) 40%, rgba(0,0,0,.12) 100%),
-    /* per-letter pastel fill */
-    linear-gradient(180deg, var(--fill1, #ffffff), var(--fill2, #eeeeee));
-  text-shadow:
-    0 1px 0 rgba(255,255,255,.85),
-    0 10px 22px rgba(17,24,39,.10);
-}
-
-/* A tiny playful wobble (optional) */
-.word.no-tiles .tile:nth-child(1){ transform: rotate(-2deg) translateY(1px); }
-.word.no-tiles .tile:nth-child(2){ transform: rotate(1.5deg) translateY(0px); }
-.word.no-tiles .tile:nth-child(3){ transform: rotate(-1deg) translateY(2px); }
-.word.no-tiles .tile:nth-child(4){ transform: rotate(0.5deg); }
-.word.no-tiles .tile:nth-child(5){ transform: rotate(-1.2deg) translateY(1px); }
-.word.no-tiles .tile:nth-child(6){ transform: rotate(1.2deg); }
-.word.no-tiles .tile:nth-child(7){ transform: rotate(-0.6deg) translateY(1px); }
