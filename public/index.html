@@ -1,171 +1,124 @@
-/* ========== Base tokens ========== */
-:root{
-  --ink:#111827; --muted:#6B7280; --paper:#fff; --surface:rgba(255,255,255,.75);
-  --radius:28px; --radius-inner:16px;
-  --shadow-3:0 30px 70px rgba(17,24,39,.18); --focus:#2563eb;
-}
-*{box-sizing:border-box} html,body{height:100%}
-body{margin:0;background:#FFFDF8;color:var(--ink);overflow:hidden;
-     font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Inter, Arial}
-.hidden{display:none}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0)}
-:where(button,[role="button"]):focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:12px}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fortuny — crack a daily fortune</title>
 
-/* HUD */
-.hud-left{position:fixed;top:16px;left:16px;z-index:30;display:flex;gap:10px}
-.lang{display:inline-flex;background:rgba(255,255,255,.6);backdrop-filter:blur(8px);
-      border:1px solid rgba(17,24,39,.12);border-radius:12px;overflow:hidden;box-shadow:0 10px 20px rgba(17,24,39,.10)}
-.lang button{border:0;background:transparent;color:#111827;padding:10px 14px;cursor:pointer;font-weight:800}
-.lang button[aria-pressed="true"]{background:rgba(17,24,39,.06);outline:1px solid rgba(17,24,39,.12)}
+  <!-- Fonts: Fredoka (hero), Plus Jakarta Sans (fortune/UI) -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@700;900&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 
-/* Layout */
-.wrap{position:relative;z-index:10;min-height:100%;display:grid;place-items:center;padding:24px}
-.card{position:relative;width:min(960px,92vw);border-radius:var(--radius);background:var(--surface);
-      box-shadow:var(--shadow-3);backdrop-filter:blur(8px);border:1px solid rgba(17,24,39,.06);
-      padding:clamp(20px,4vw,40px);container-type:inline-size}
-.hint{text-align:center;margin:14px auto 4px;color:#374151;opacity:.85;font-size:14px}
+  <meta name="theme-color" content="#FFFDF8" />
+  <link rel="manifest" href="/manifest.webmanifest" />
 
-/* Backgrounds */
-.bg{position:fixed;inset:0;pointer-events:none}
-.bg--clouds{z-index:-30;background:#FFFDF8;background-image:
-  radial-gradient(46% 40% at 10% 18%, #FFD1B3 0%, rgba(255,209,179,0) 72%),
-  radial-gradient(50% 44% at 88% 14%, #F5B0E0 0%, rgba(245,176,224,0) 74%),
-  radial-gradient(52% 46% at 14% 86%, #AEDDFF 0%, rgba(174,221,255,0) 76%),
-  radial-gradient(56% 48% at 86% 84%, #BFF2D9 0%, rgba(191,242,217,0) 78%),
-  radial-gradient(36% 32% at 50% 12%, #FFF082 0%, rgba(255,240,130,0) 70%),
-  radial-gradient(34% 30% at 50% 88%, #D6C4FF 0%, rgba(214,196,255,0) 68%),
-  radial-gradient(90% 80% at 50% 50%, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 60%)}
-.bg--conic{z-index:-20;background-image:conic-gradient(from 0deg at 50% 50%,
-  hsla(330,85%,70%,.28) 0deg, hsla(45,95%,70%,.28) 90deg, hsla(190,85%,70%,.28) 180deg, hsla(265,85%,75%,.28) 270deg, hsla(330,85%,70%,.28) 360deg);
-  filter:blur(48px) saturate(1.15);mix-blend-mode:screen;opacity:.45;animation:spinHue 80s linear infinite}
-.bg--speckles{z-index:-12;background-image:radial-gradient(hsla(0,0%,100%,.22) 1px, transparent 1.2px),
-  radial-gradient(hsla(210,30%,10%,.10) 1px, transparent 1.2px);background-size:3px 3px, 4px 4px;
-  background-position:0 0, 2px 2px;mix-blend-mode:overlay;opacity:.22}
-.bg--vignette{z-index:-10;background:radial-gradient(60% 60% at 50% 40%, rgba(0,0,0,.04), transparent 60%)}
-@keyframes spinHue{to{transform:rotate(360deg)}}
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <!-- screen-reader live region -->
+  <div id="sr-status" class="sr-only" aria-live="polite"></div>
 
-/* HERO — letters-only word (Fredoka, solid color) */
-.word{position:relative;width:min(720px,90%);margin:0 auto;cursor:pointer}
-.tiles{display:flex;justify-content:center;gap:clamp(10px,2.2vw,24px)}
-.no-tiles .tile{background:transparent;border:0;box-shadow:none;aspect-ratio:auto;padding:0}
-.no-tiles .tile::before{display:none}
+  <!-- Pastel background layers -->
+  <div class="bg bg--clouds"></div>
+  <div class="bg bg--conic"></div>
+  <div class="bg bg--speckles"></div>
+  <div class="bg bg--vignette"></div>
 
-/* Fredoka for hero letters */
-.f1,.f2,.f3,.f4,.f5,.f6,.f7{
-  font-family: 'Fredoka', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  font-weight: 900;
-  letter-spacing: .02em;
-}
+  <!-- HUD: language -->
+  <div class="hud-left">
+    <div class="lang" role="group" aria-label="Language">
+      <button id="btnTR" aria-pressed="false">TR</button>
+      <button id="btnEN" aria-pressed="true">EN</button>
+    </div>
+  </div>
 
-/* Solid style letters (no gradient / no stroke) */
-.crayon{
-  position: relative;
-  font-size: clamp(56px, 10vw, 110px);
-  line-height: 1;
-  color: #1f2937;              /* solid graphite */
-  text-shadow: 0 10px 22px rgba(17,24,39,.08);
-  transition: transform .12s ease;
-}
-.crayon:hover{ transform: translateY(-2px) scale(1.02); }
-.crayon::before, .crayon::after { content: none !important; }
+  <main class="wrap">
+    <!-- HERO — letters only, solid Fredoka -->
+    <section id="heroCard" class="card">
+      <div class="word can-crack no-tiles"
+           aria-label="FORTUNY"
+           title="Tap or press Enter to crack"
+           role="button" tabindex="0"
+           aria-describedby="tapText">
+        <!-- base -->
+        <div class="word-base">
+          <div class="tiles">
+            <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
+          </div>
+        </div>
 
-/* crack animation & effects */
-.word-base{transition:opacity .28s ease}
-.word-half{position:absolute;inset:0;opacity:0;pointer-events:none}
-.can-crack:hover .word-base{opacity:0}
-.can-crack:hover .word-half{opacity:1}
-@keyframes crack-left{0%{transform:translate(0,0) rotate(0)}45%{transform:translate(-6px,-3px) rotate(-4deg)}100%{transform:translate(-16px,8px) rotate(-8deg)}}
-@keyframes crack-right{0%{transform:translate(0,0) rotate(0)}45%{transform:translate(6px,-3px) rotate(4deg)}100%{transform:translate(16px,8px) rotate(8deg)}}
-.can-crack:hover .word-half.left{animation:crack-left 620ms cubic-bezier(.2,.8,.2,1) both}
-.can-crack:hover .word-half.right{animation:crack-right 620ms cubic-bezier(.2,.8,.2,1) both}
-.word.force-crack .word-base{opacity:0}.word.force-crack .word-half{opacity:1}
-.word.force-crack .word-half.left{animation:crack-left 620ms cubic-bezier(.2,.8,.2,1) both}
-.word.force-crack .word-half.right{animation:crack-right 620ms cubic-bezier(.2,.8,.2,1) both}
-.split-crack{position:absolute;left:50%;top:6%;width:2px;height:88%;transform:translateX(-50%);
-  background:linear-gradient(to bottom, rgba(17,24,39,0), rgba(17,24,39,.35) 50%, rgba(17,24,39,0)); border-radius:2px; box-shadow:0 0 6px rgba(255,255,255,.85); opacity:0; mix-blend-mode:multiply}
-@keyframes crack-glint{0%{opacity:0}20%{opacity:.9}100%{opacity:0}}
-.can-crack:hover .split-crack,.word.force-crack .split-crack{animation:crack-glint 620ms ease-out both}
-.crumb{position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:2px;background:rgba(17,24,39,.28);transform:translate(-50%,-50%);opacity:0}
-@keyframes crumb-drop{0%{opacity:0;transform:translate(var(--x,0px), -4px) scale(.9)}15%{opacity:1}100%{opacity:0;transform:translate(var(--x,0px), 22px) scale(.6)}}
-.can-crack:hover .crumb,.word.force-crack .crumb{animation:crumb-drop 680ms ease-out both}
+        <!-- LEFT overlay -->
+        <div class="word-half left">
+          <div class="tiles">
+            <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
+          </div>
+        </div>
 
-/* REVEAL — bright, airy */
-.topline{display:flex;justify-content:center}
-.streak{
-  display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;
-  font-weight:800; letter-spacing:.02em;
-  background:#FFF6E8;border:1px solid #FAD7B0;color:#7A501E
-}
+        <!-- RIGHT overlay -->
+        <div class="word-half right">
+          <div class="tiles">
+            <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
+          </div>
+        </div>
 
-/* mini brand */
-.brandline{display:flex;align-items:center;justify-content:center;margin:6px 0 10px}
-.brandline .brand{
-  font-weight:900; letter-spacing:.3px;
-  font-size:clamp(20px,3.4vw,30px);
-  background:linear-gradient(90deg,#FFC9A9,#FFB8CC,#D9C3FF,#AEE0FF,#BDEED6,#FFE88A,#BEE3FF);
-  -webkit-background-clip:text;background-clip:text;color:transparent; -webkit-text-stroke:.6px rgba(17,24,39,.08)
-}
+        <!-- crack glint & crumbs -->
+        <span class="split-crack" aria-hidden="true"></span>
+        <span class="crumb" style="--x:-18px"></span>
+        <span class="crumb" style="--x:-6px"></span>
+        <span class="crumb" style="--x:8px"></span>
+        <span class="crumb" style="--x:20px"></span>
+      </div>
 
-/* “Today’s Mood” chip */
-.chip{
-  display:inline-flex;align-items:center;justify-content:center;
-  margin:0 auto 10px; padding:6px 12px;border-radius:999px;
-  font-weight:800; letter-spacing:.02em;
-  background:#F7F2FF;border:1px solid #E6DAFF;color:#5A3FB3; width:max-content
-}
+      <p id="tapText" class="hint">tap to crack</p>
+    </section>
 
-/* paper with candy border */
-.paper{
-  position:relative; border-radius:18px; padding:28px 24px; background:var(--paper);
-  border:1px solid rgba(17,24,39,.06);
-  box-shadow:0 14px 36px rgba(17,24,39,.12);
-  overflow:hidden
-}
-.paper::before{
-  content:""; position:absolute; inset:0; border-radius:inherit; padding:2px;
-  background:linear-gradient(135deg,#FFC9A9,#FFB8CC,#D9C3FF,#AEE0FF,#BDEED6,#FFE88A,#BEE3FF);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; opacity:.6
-}
+    <!-- REVEAL — bright pastel card -->
+    <section id="revealStage" class="card hidden" inert>
+      <article>
+        <div class="topline">
+          <span id="streakBadge" class="streak" data-count="1">🔥 1-day streak</span>
+        </div>
 
-/* the fortune text — Plus Jakarta Sans (changed) */
-.fortune{
-  font-family:'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto;
-  font-weight:800;
-  font-size:clamp(28px,6vw,42px);
-  line-height:1.15; letter-spacing:.1px;
-  text-align:center; color:#0d1320; margin:4px auto; max-width:40ch
-}
+        <div class="brandline"><div class="brand">FORTUNY</div></div>
+        <div class="chip" id="todayLabel">Today’s Mood</div>
 
-/* buttons + timer */
-.actions{display:flex;gap:10px;justify-content:center;margin-top:12px}
-.btn{
-  appearance:none;border:1px solid rgba(17,24,39,.12);background:#fff;color:#111827;
-  padding:10px 14px;border-radius:10px;font-weight:800;letter-spacing:.02em;cursor:pointer;
-  transition:.15s transform ease,.15s box-shadow ease
-}
-.btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(0,0,0,.10)}
-.btn.primary{background:#111827;color:#fff;border-color:transparent}
-.countdown-wrap{display:flex;gap:12px;align-items:center;justify-content:center;margin-top:12px;color:var(--muted)}
-.countdown{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#111827;font-size:1.05rem}
-.label{font-weight:800;opacity:.9;text-transform:uppercase;letter-spacing:.16em;font-size:.72rem}
+        <div class="paper">
+          <div id="fortuneText" class="fortune">…</div>
+        </div>
 
-/* container tweaks */
-@container (max-width:520px){
-  .fortune{font-size:clamp(22px,7vw,28px);max-width:32ch}
-  .actions{flex-wrap:wrap}
-}
+        <div class="actions">
+          <button id="btnCopy" class="btn">Copy</button>
+          <button id="btnShare" class="btn primary">Share</button>
+        </div>
 
-/* Reduced motion */
-@media(prefers-reduced-motion:reduce){
-  .bg--conic{animation:none}
-  .can-crack:hover .word-half.left,
-  .can-crack:hover .word-half.right,
-  .can-crack:hover .split-crack,
-  .can-crack:hover .crumb,
-  .word.force-crack .word-half.left,
-  .word.force-crack .word-half.right,
-  .word.force-crack .split-crack,
-  .word.force-crack .crumb{animation:none}
-  .can-crack:hover .word-base,.word.force-crack .word-base{opacity:1}
-}
+        <div class="countdown-wrap">
+          <span id="labelRefresh" class="label">REFRESH IN</span>
+          <span id="countdown" class="countdown">--:--:--</span>
+        </div>
+
+        <div id="hint" class="hint">One fortune per device per 24 hours.</div>
+      </article>
+    </section>
+  </main>
+
+  <script src="/main.js" defer></script>
+</body>
+</html>
