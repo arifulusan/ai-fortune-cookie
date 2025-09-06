@@ -59,11 +59,11 @@ body{margin:0;background:#FFFDF8;color:var(--ink);overflow:hidden;
 .no-tiles .tile{background:transparent;border:0;box-shadow:none;aspect-ratio:auto;padding:0}
 .no-tiles .tile::before{display:none}
 
-/* Baloo 2 for hero letters */
+/* Hero kelime Sora ile (daha köşeli, modern) */
 .f1,.f2,.f3,.f4,.f5,.f6,.f7{
-  font-family: 'Baloo 2', 'Fredoka', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
-  font-weight: 800;
-  letter-spacing: .02em;
+  font-family: 'Sora', 'Fredoka', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  font-weight: 900;         /* daha tok görünüm */
+  letter-spacing: .01em;    /* daha sıkı izlenim */
 }
 
 /* Per-letter rainbow assignment */
