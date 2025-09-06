@@ -5,30 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Fortuny — crack a daily fortune</title>
 
-  <!-- Fresh editorial fonts -->
+  <!-- Performance-friendly fonts -->
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Display:wght@400;600;700;800;900&family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Paytone+One&display=swap" rel="stylesheet">
 
-  <!-- Social / PWA (keep if you already have) -->
+  <!-- Open Graph / Twitter -->
   <meta property="og:title" content="Fortuny — your daily fortune" />
   <meta property="og:description" content="Crack a cookie. One AI fortune every 24 hours." />
   <meta property="og:image" content="/og-default.jpg" />
+  <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" content="#FFFDF8" />
+
+  <!-- PWA -->
   <link rel="manifest" href="/manifest.webmanifest">
 
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
+  <!-- screen-reader live region -->
   <div id="sr-status" class="sr-only" aria-live="polite"></div>
 
-  <!-- Background -->
+  <!-- background layers -->
   <div class="bg bg--clouds"></div>
   <div class="bg bg--conic"></div>
   <div class="bg bg--speckles"></div>
   <div class="bg bg--vignette"></div>
 
-  <!-- HUD -->
+  <!-- HUD: language -->
   <div class="hud-left">
     <div class="lang" role="group" aria-label="Language">
       <button id="btnTR" aria-pressed="false">TR</button>
@@ -36,67 +40,78 @@
     </div>
   </div>
 
+  <!-- main -->
   <main class="wrap">
-    <!-- HERO (letters-only) -->
+
+    <!-- HERO / letters-only crackable word -->
     <section id="heroCard" class="card">
       <div class="word can-crack no-tiles"
-           aria-label="FORTUNY" title="Tap or press Enter to crack"
-           role="button" tabindex="0" aria-describedby="tapText">
-        <div class="word-base"><div class="tiles">
-          <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
-          <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
-          <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
-          <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
-          <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
-          <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
-          <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
-        </div></div>
+           aria-label="FORTUNY"
+           title="Tap or press Enter to crack"
+           role="button" tabindex="0"
+           aria-describedby="tapText">
+        <!-- base -->
+        <div class="word-base">
+          <div class="tiles">
+            <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
+          </div>
+        </div>
 
-        <!-- overlays for crack -->
-        <div class="word-half left"><div class="tiles">
-          <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
-          <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
-          <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
-          <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
-          <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
-          <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
-          <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
-        </div></div>
-        <div class="word-half right"><div class="tiles">
-          <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
-          <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
-          <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
-          <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
-          <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
-          <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
-          <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
-        </div></div>
+        <!-- LEFT overlay -->
+        <div class="word-half left">
+          <div class="tiles">
+            <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
+          </div>
+        </div>
 
+        <!-- RIGHT overlay -->
+        <div class="word-half right">
+          <div class="tiles">
+            <div class="tile"><span class="crayon f1" data-ch="F">F</span></div>
+            <div class="tile"><span class="crayon f2" data-ch="O">O</span></div>
+            <div class="tile"><span class="crayon f3" data-ch="R">R</span></div>
+            <div class="tile"><span class="crayon f4" data-ch="T">T</span></div>
+            <div class="tile"><span class="crayon f5" data-ch="U">U</span></div>
+            <div class="tile"><span class="crayon f6" data-ch="N">N</span></div>
+            <div class="tile"><span class="crayon f7" data-ch="Y">Y</span></div>
+          </div>
+        </div>
+
+        <!-- crack glint & crumbs -->
         <span class="split-crack" aria-hidden="true"></span>
         <span class="crumb" style="--x:-18px"></span>
         <span class="crumb" style="--x:-6px"></span>
         <span class="crumb" style="--x:8px"></span>
         <span class="crumb" style="--x:20px"></span>
       </div>
+
       <p id="tapText" class="hint">tap to crack</p>
     </section>
 
-    <!-- REVEAL — NEW editorial fortune design -->
+    <!-- REVEAL -->
     <section id="revealStage" class="card hidden" inert>
-      <article class="reveal">
+      <article>
         <div class="topline">
           <span id="streakBadge" class="streak" data-count="1">🔥 1-day streak</span>
         </div>
 
-        <div class="mantra">
-          <span class="quote-mark" aria-hidden="true">“</span>
-          <p id="fortuneText" class="fortune-text">…</p>
-          <footer class="fortune-meta">
-            <span id="fortuneDate">—</span>
-            <span class="dot" aria-hidden="true">•</span>
-            <span id="fortuneMood">—</span>
-          </footer>
-          <span class="quote-tail" aria-hidden="true">”</span>
+        <!-- mini brand -->
+        <div class="brandline"><div class="brand">FORTUNY</div></div>
+
+        <div class="paper">
+          <div id="fortuneText" class="fortune">…</div>
         </div>
 
         <div class="actions">
@@ -112,8 +127,14 @@
         <div id="hint" class="hint">One fortune per device per 24 hours.</div>
       </article>
     </section>
+
   </main>
 
   <script src="/main.js" defer></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    }
+  </script>
 </body>
 </html>
