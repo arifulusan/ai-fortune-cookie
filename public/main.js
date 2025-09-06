@@ -1,4 +1,4 @@
-// Fortuny — pastel, rainbow hero; 24h lock; EN/TR; streak; copy/share; countdown
+// Fortuny — solid Fredoka hero; 24h lock; EN/TR; streak; copy/share; countdown
 
 const LS = {
   lang: 'fc_lang_pref',
@@ -22,7 +22,7 @@ let revealed = false;
 let countdownTimer = null;
 let currentData = null;
 
-// i18n
+// i18n (updated: Today's Mood / Bugünün Modu)
 function t(key){
   const tr = {
     tap:'çatlatmak için dokun',
@@ -32,7 +32,7 @@ function t(key){
     copy:'Kopyala', copied:'Kopyalandı!',
     share:'Paylaş', shared:'Paylaşıldı!',
     streak:(n)=>`${n} günlük seri`,
-    today:'Bugünün Falı'
+    today:"Bugünün Modu"
   };
   const en = {
     tap:'tap to crack',
@@ -42,7 +42,7 @@ function t(key){
     copy:'Copy', copied:'Copied!',
     share:'Share', shared:'Shared!',
     streak:(n)=>`${n}-day streak`,
-    today:"Today’s Fortune"
+    today:"Today’s Mood"
   };
   const dict = currentLang === 'tr' ? tr : en;
   return typeof dict[key] === 'function' ? dict[key] : dict[key];
@@ -167,7 +167,7 @@ function confetti(x=innerWidth/2, y=innerHeight/2){
   }
 }
 
-// Swap hero/reveal (uses View Transitions if available)
+// Swap hero/reveal
 function swapPanels(showReveal){
   const doSwap=()=>{ hero.classList.toggle('hidden', showReveal); reveal.classList.toggle('hidden', !showReveal); reveal.toggleAttribute('inert', !showReveal); };
   if (document.startViewTransition) document.startViewTransition(doSwap); else doSwap();
@@ -238,4 +238,3 @@ wordEl?.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' ') crackAn
   // else show hero
   hero.classList.remove('hidden'); reveal.classList.add('hidden');
 })();
-   
