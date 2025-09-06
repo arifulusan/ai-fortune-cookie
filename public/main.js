@@ -238,3 +238,4 @@ wordEl?.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' ') crackAn
   // else show hero
   hero.classList.remove('hidden'); reveal.classList.add('hidden');
 })();
+   
