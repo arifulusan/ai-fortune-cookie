@@ -1,18 +1,20 @@
 {
-    "name": "ai-fortune-cookie",
-    "version": "1.1.0",
-    "description": "Daily AI fortune (EN/TR) with 24h lock. Node + Express + OpenAI + optional Redis.",
-    "type": "module",
-    "scripts": {
-        "start": "node server.js"
-    },
-    "dependencies": {
-        "canvas": "^2.11.2",
-        "cookie-parser": "^1.4.6",
-        "dotenv": "^16.4.5",
-        "express": "^4.19.2",
-        "express-rate-limit": "^7.4.0",
-        "ioredis": "^5.4.1",
-        "openai": "^4.56.0"
-    }
+  "name": "ai-fortune-cookie",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-fetch": "^3.3.2"
+  }
 }
+
