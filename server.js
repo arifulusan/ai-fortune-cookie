@@ -15,7 +15,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 const PORT = process.env.PORT || 3000;
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5';
 const PRIMARY_KEY = process.env.OPENAI_API_KEY || '';
 const BACKUP_KEY  = process.env.OPENAI_API_KEY_BACKUP || '';
 
