@@ -1,12 +1,18 @@
 FROM node:20-bookworm-slim
+
+# node-canvas için sistem bağımlılıkları
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libcairo2-dev libjpeg-dev libpango1.0-dev libgif-dev librsvg2-dev \
     build-essential python3 pkg-config \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# prod bağımlılıklar
 COPY package*.json ./
 RUN npm ci --omit=dev
+
+# uygulama kodu
 COPY . .
 
 ENV NODE_ENV=production
