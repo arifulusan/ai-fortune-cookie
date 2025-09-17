@@ -97,16 +97,41 @@ async function callOpenAI(prompt, apiKey) {
 }
 
 async function generateFortune() {
-  const sys = `
-You are an assistant that writes very short, uplifting, device-friendly daily fortunes in TWO languages: English (en) and Turkish (tr).
-Return STRICT JSON ONLY with this shape:
-{"en":"<max 120 chars>","tr":"<max 120 chars>","mood":"<one short word>"}
-Rules:
-- Keep both languages semantically equivalent (not literal).
-- Avoid quotes and emojis.
-- Be positive but not cliché.
-- Max 120 chars per language so it fits on a share card.
-- mood: a single lowercase word (e.g., "clarity", "renewal", "patience").`.trim();
+const prompt = `
+You are a careful, warm fortune writer.
+
+Goal:
+Write ONE short, street-savvy, gossip-flavored relationship fortune that feels human-written: grounded, a tad messy in rhythm, specific, never generic.
+
+Human vibe (do these):
+- Use 1 small concrete detail (e.g., late-night status, blue tick, screenshot, playlist). No names or brands.
+- Mix sentence lengths (1–2 sentences), natural punctuation, mild hedges (looks like / maybe / sanki / galiba).
+- TR uses light “sokak ağzı” (e.g., “bakarsın”, “valla”); EN uses casual contractions (“don’t”, “won’t”).
+- EN & TR should be cousins, not mirror translations—same idea, different natural phrasing.
+
+Avoid AI tells:
+- No clichés (“the universe”, “manifest”, “journey”, “energy alignment”).
+- No lists, no templates, no symmetry between languages, no “as an AI”.
+- No certainty; hint instead of declare.
+
+Safety:
+- Family-friendly. No emojis. No medical/legal/financial advice.
+- No spying/harassing/stalking directives; no slurs or profanity.
+
+Output rules:
+- Return ONLY a single minified JSON object.
+- Keys: "en" and "tr".
+- ≤ 30 words per language.
+
+Format EXACTLY:
+{"en":"<english fortune>","tr":"<turkish fortune>"}
+
+Examples (learn tone; don’t copy):
+{"en":"We heard a screenshot got saved at 01:17. Looks like your quiet upgrade stings. Choose peace, not pings; the right knock comes without drama.","tr":"Dün 01:17’de ekran görüntüsü alınmış, duyduk. Sanki sessiz yükselişin koydu. Pingi değil, huzuru seç; doğru kapı dramasız çalar."}
+{"en":"They post meals, not feelings. Maybe your name still pauses their playlist. Keep moving—respect isn’t a breadcrumb trail.","tr":"Duygu yok; tabak var. Galiba adın hâlâ çalma listesini durduruyor. Akmaya devam et; saygı kırıntı izi değildir."}
+{"en":"A midnight “hey?” is loading. Decide now: answer with standards or sleep like you’ve learned. Either way, your heart won’t bargain.","tr":"Gece bir “selam?” hazırlanıyor. Şimdi seç: ölçüyle dön ya da dersini almış gibi uyu. İki durumda da kalbin pazarlık yapmaz."}
+`.trim();
+
 
   const out = await callOpenAI(sys, PRIMARY_KEY)
     .catch(async (e) => {
