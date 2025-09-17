@@ -1,5 +1,6 @@
-// Fortuny backend — Daily AI fortune + Spotify-like share card (GPT-5 + robust parsing, strict retry, lazy-canvas)
-// -----------------------------------------------------------------------------------------------------------------
+// Fortuny backend — Daily AI fortune + Spotify-like share card
+// GPT-5 default + fallback, strict JSON parsing, dev force, diag, lazy-canvas
+// --------------------------------------------------------------------------------------------
 
 import 'dotenv/config';
 import express from 'express';
@@ -16,23 +17,26 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-// Models: GPT-5 as default, auto fallback to gpt-4.1-mini
+// ==== Model ayarları: gpt-5 varsayılan, gpt-4.1-mini fallback
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5';
 const FALLBACK_MODEL = process.env.OPENAI_MODEL_FALLBACK || 'gpt-4.1-mini';
 
 const PRIMARY_KEY = process.env.OPENAI_API_KEY || '';
 const BACKUP_KEY  = process.env.OPENAI_API_KEY_BACKUP || '';
 
+// Dev ortamında 24h kilidi bypass
+const DEV_ALLOW_FORCE = process.env.DEV_ALLOW_FORCE === '1';
+
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
-// Static
+// Statik dosyalar
 app.use(express.static(path.join(__dirname, 'public'), {
   extensions: ['html'],
   maxAge: '1h'
 }));
 
-// Simple log
+// Basit log
 app.use((req, _res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/share-card')) {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -40,7 +44,7 @@ app.use((req, _res, next) => {
   next();
 });
 
-// ------------------------------ Helpers ------------------------------
+// ------------------------------ Yardımcılar ------------------------------
 const DAY_MS = 24 * 60 * 60 * 1000;
 const nowISO = () => new Date().toISOString();
 const plus24hISO = () => new Date(Date.now() + DAY_MS).toISOString();
@@ -58,11 +62,9 @@ const safeJsonParse = (s, fallback = null) => { try { return JSON.parse(s); } ca
 
 function stripCodeFences(s='') {
   let t = String(s).trim();
-  // remove ```json ... ``` or ``` ... ```
-  t = t.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  t = t.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim(); // ```json ... ```
   return t;
 }
-
 function extractJsonBlock(text) {
   if (!text) return null;
   const t = stripCodeFences(text);
@@ -71,7 +73,6 @@ function extractJsonBlock(text) {
   if (start === -1 || end === -1 || end <= start) return null;
   return safeJsonParse(t.slice(start, end + 1), null);
 }
-
 function pickOutputText(respJson) {
   if (respJson?.output_text) return String(respJson.output_text);
   const o = respJson?.output?.[0]?.content?.[0]?.text?.value;
@@ -83,42 +84,41 @@ function pickOutputText(respJson) {
   return '';
 }
 
-// Parse any bilingual-ish text into {en,tr}
+// Çift dilli metni {en,tr}’ye parçala (JSON değilse)
 function parseBilingual(out) {
   if (!out) return null;
   let t = stripCodeFences(out);
 
-  // 1) Proper JSON
+  // 1) JSON
   const j = extractJsonBlock(t) || safeJsonParse(t);
   if (j && typeof j.en === 'string' && typeof j.tr === 'string') {
     return { en: j.en, tr: j.tr };
   }
 
-  // 2) EN:"..."/TR:"..."
+  // 2) EN:"..." TR:"..."
   const m = t.match(/["']?en["']?\s*[:=]\s*"(.*?)"[\s,;]+["']?tr["']?\s*[:=]\s*"(.*?)"/is);
   if (m) return { en: m[1], tr: m[2] };
 
-  // 3) Labelled lines EN: ... \n TR: ...
+  // 3) Etiketli satırlar
   const ml = t.match(/en\s*[:\-]\s*(.+)\n\s*tr\s*[:\-]\s*(.+)/i);
   if (ml) return { en: ml[1].trim(), tr: ml[2].trim() };
 
-  // 4) Two non-empty lines → assume [en, tr]
+  // 4) İki satır → [en, tr]
   const lines = t.split(/\r?\n+/).map(s => s.trim()).filter(Boolean);
   if (lines.length === 2) return { en: lines[0], tr: lines[1] };
 
   return null;
 }
-
 function clampFortunes(data) {
   const clean = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 120);
   return { en: clean(data.en), tr: clean(data.tr) };
 }
 
-// ----------------------------- Memory -----------------------------
+// ----------------------------- Hafıza / Store -----------------------------
 const store = new Map();
 // store.set(deviceId, { fortune:{en,tr}, mood, createdAt, refreshAt })
 
-// ----------------------------- OpenAI -----------------------------
+// ----------------------------- OpenAI Çağrısı -----------------------------
 async function callOpenAI(model, prompt, apiKey) {
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -190,6 +190,7 @@ Format EXACTLY:
 
   // 1) İlk deneme
   let out = await askOpenAIWithFallbacks(basePrompt);
+  console.log('[openai] raw out (first 200):', (out || '').slice(0,200));
   let data = parseBilingual(out);
 
   // 2) JSON çıkmadıysa: STRICT retry (tek sefer)
@@ -197,12 +198,16 @@ Format EXACTLY:
     const strictPrompt = basePrompt + '\n\nSTRICT MODE: Output ONLY raw JSON exactly as specified. No prose, no backticks.';
     try {
       out = await askOpenAIWithFallbacks(strictPrompt);
+      console.log('[openai][strict] raw out (first 200):', (out || '').slice(0,200));
       data = parseBilingual(out);
-    } catch {}
+    } catch (e) {
+      console.warn('[openai] strict retry failed:', e.message);
+    }
   }
 
   // 3) Hâlâ olmadıysa güvenli fallback
   if (!data || !data.en || !data.tr) {
+    console.warn('[openai] parse failed, using local fallback');
     data = {
       en: 'Make room. New things are arriving.',
       tr: 'Yer aç. Yeni şeyler geliyor.'
@@ -239,7 +244,10 @@ app.post('/api/fortune', async (req, res) => {
   const existing = store.get(deviceId);
   const nowMs = Date.now();
 
-  if (existing && new Date(existing.refreshAt).getTime() > nowMs) {
+  // DEV force baypas (sadece DEV_ALLOW_FORCE=1 ise)
+  const force = DEV_ALLOW_FORCE && String(req.query.force) === '1';
+
+  if (!force && existing && new Date(existing.refreshAt).getTime() > nowMs) {
     return res.json({ ok: true, ...existing, serverNow: nowISO() });
   }
 
@@ -258,7 +266,7 @@ app.post('/api/fortune', async (req, res) => {
   }
 });
 
-// ------------------------ Share Card (lazy canvas) ---------------------
+// ------------------------ Paylaşım Kartı (lazy canvas) ---------------------
 let createCanvas, registerFont;
 let __hasCanvas = false;
 let __fontsReady = false;
@@ -287,21 +295,16 @@ function ensureFonts() {
     __fontsReady = true;
   } catch {}
 }
-
 function fromB64Url(b64 = '') {
   let s = String(b64).replace(/-/g, '+').replace(/_/g, '/');
   while (s.length % 4) s += '=';
   try { return Buffer.from(s, 'base64').toString('utf8'); } catch { return ''; }
 }
-
 function paintBg(ctx, W, H) {
-  ctx.fillStyle = '#FFFDF8';
-  ctx.fillRect(0, 0, W, H);
-
+  ctx.fillStyle = '#FFFDF8'; ctx.fillRect(0, 0, W, H);
   const blob = (x, y, r, c, a=0.6) => {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-    g.addColorStop(0, c);
-    g.addColorStop(1, `rgba(255,255,255,0)`);
+    g.addColorStop(0, c); g.addColorStop(1, `rgba(255,255,255,0)`);
     ctx.globalAlpha = a; ctx.fillStyle = g; ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
   };
@@ -309,30 +312,21 @@ function paintBg(ctx, W, H) {
   blob(W*0.86, H*0.16, Math.max(W,H)*0.42, '#F5B0E0', .9);
   blob(W*0.16, H*0.84, Math.max(W,H)*0.48, '#AEDDFF', .9);
   blob(W*0.84, H*0.82, Math.max(W,H)*0.46, '#BFF2D9', .9);
-
   const g2 = ctx.createRadialGradient(W/2, H*0.4, 0, W/2, H*0.4, Math.max(W,H)*0.8);
-  g2.addColorStop(0, 'rgba(0,0,0,0.05)');
-  g2.addColorStop(1, 'rgba(0,0,0,0)');
+  g2.addColorStop(0, 'rgba(0,0,0,0.05)'); g2.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = g2; ctx.fillRect(0,0,W,H);
 }
-
 function wrapLines(ctx, text, maxWidth, maxLines = 6) {
   const words = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
-  const lines = [];
-  let line = '';
+  const lines = []; let line = '';
   for (const w of words) {
     const test = line ? line + ' ' + w : w;
     if (ctx.measureText(test).width <= maxWidth) line = test;
-    else {
-      if (line) lines.push(line);
-      line = w;
-      if (lines.length >= maxLines - 1) break;
-    }
+    else { if (line) lines.push(line); line = w; if (lines.length >= maxLines - 1) break; }
   }
   if (line && lines.length < maxLines) lines.push(line);
   return lines;
 }
-
 function drawShareCard({ text, lang='en', mode='story' }) {
   const W = mode === 'card' ? 1200 : 1080;
   const H = mode === 'card' ? 630  : 1920;
@@ -378,12 +372,7 @@ function drawShareCard({ text, lang='en', mode='story' }) {
   // paper
   const pad = mode==='card' ? 40 : 64;
   const paperTop = chipY + chipH + (mode==='card' ? 22 : 28);
-  const paper = {
-    x: pad,
-    y: paperTop,
-    w: W - pad*2,
-    h: mode==='card' ? (H - paperTop - pad) : (H - paperTop - pad*1.2)
-  };
+  const paper = { x: pad, y: paperTop, w: W - pad*2, h: mode==='card' ? (H - paperTop - pad) : (H - paperTop - pad*1.2) };
   // shadow
   ctx.fillStyle = 'rgba(17,24,39,0.12)';
   ctx.filter = 'blur(20px)';
@@ -417,10 +406,7 @@ function drawShareCard({ text, lang='en', mode='story' }) {
     size -= 2;
   }
   let y = paper.y + (paper.h/2) - ((lines.length-1) * size * 0.6);
-  for (const ln of lines) {
-    ctx.fillText(ln, W/2, y);
-    y += size * 1.2;
-  }
+  for (const ln of lines) { ctx.fillText(ln, W/2, y); y += size * 1.2; }
 
   // footer
   ctx.font = `${mode==='card'?'700 20px':'700 26px'} "Plus Jakarta Sans", Arial, sans-serif`;
@@ -450,6 +436,18 @@ app.get('/share-card.png', async (req, res) => {
   res.setHeader('Content-Type', 'image/png');
   res.setHeader('Cache-Control', 'no-store');
   res.send(png);
+});
+
+// ------------------------------- Teşhis -----------------------------------
+app.get('/api/diag', async (_req, res) => {
+  const probe = `Return ONLY: {"ok":true} (no backticks, no prose)`;
+  try {
+    const out = await askOpenAIWithFallbacks(probe);
+    const j = safeJsonParse(out) || extractJsonBlock(out);
+    res.json({ ok: !!(j && j.ok === true), modelPrimary: OPENAI_MODEL, modelFallback: FALLBACK_MODEL, raw: (out||'').slice(0,180) });
+  } catch (e) {
+    res.status(500).json({ ok:false, error: e.message });
+  }
 });
 
 // ------------------------------- Health -----------------------------------
