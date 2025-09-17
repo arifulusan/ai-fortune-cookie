@@ -1,5 +1,5 @@
-// Fortuny backend — Daily AI fortune + Spotify-like share card (GPT-5 + fallbacks, lazy-canvas)
-// --------------------------------------------------------------------------------------------
+// Fortuny backend — Daily AI fortune + Spotify-like share card (GPT-5 + robust parsing, strict retry, lazy-canvas)
+// -----------------------------------------------------------------------------------------------------------------
 
 import 'dotenv/config';
 import express from 'express';
@@ -16,7 +16,7 @@ const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-// ==== Model ayarları: gpt-5 varsayılan, gpt-4.1-mini fallback
+// Models: GPT-5 as default, auto fallback to gpt-4.1-mini
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5';
 const FALLBACK_MODEL = process.env.OPENAI_MODEL_FALLBACK || 'gpt-4.1-mini';
 
@@ -26,13 +26,13 @@ const BACKUP_KEY  = process.env.OPENAI_API_KEY_BACKUP || '';
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 
-// Statik dosyalar
+// Static
 app.use(express.static(path.join(__dirname, 'public'), {
   extensions: ['html'],
   maxAge: '1h'
 }));
 
-// Basit log
+// Simple log
 app.use((req, _res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/share-card')) {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -40,9 +40,8 @@ app.use((req, _res, next) => {
   next();
 });
 
-// ------------------------------ Yardımcılar ------------------------------
+// ------------------------------ Helpers ------------------------------
 const DAY_MS = 24 * 60 * 60 * 1000;
-
 const nowISO = () => new Date().toISOString();
 const plus24hISO = () => new Date(Date.now() + DAY_MS).toISOString();
 
@@ -55,16 +54,25 @@ function getDeviceId(req, res) {
   return id;
 }
 
-const safeJsonParse = (s, fallback=null) => { try { return JSON.parse(s); } catch { return fallback; } };
+const safeJsonParse = (s, fallback = null) => { try { return JSON.parse(s); } catch { return fallback; } };
+
+function stripCodeFences(s='') {
+  let t = String(s).trim();
+  // remove ```json ... ``` or ``` ... ```
+  t = t.replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+  return t;
+}
+
 function extractJsonBlock(text) {
   if (!text) return null;
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
+  const t = stripCodeFences(text);
+  const start = t.indexOf('{');
+  const end = t.lastIndexOf('}');
   if (start === -1 || end === -1 || end <= start) return null;
-  return safeJsonParse(text.slice(start, end + 1), null);
+  return safeJsonParse(t.slice(start, end + 1), null);
 }
+
 function pickOutputText(respJson) {
-  // OpenAI Responses API tipik alanları
   if (respJson?.output_text) return String(respJson.output_text);
   const o = respJson?.output?.[0]?.content?.[0]?.text?.value;
   if (o) return String(o);
@@ -75,11 +83,42 @@ function pickOutputText(respJson) {
   return '';
 }
 
-// ----------------------------- Hafıza / Store -----------------------------
+// Parse any bilingual-ish text into {en,tr}
+function parseBilingual(out) {
+  if (!out) return null;
+  let t = stripCodeFences(out);
+
+  // 1) Proper JSON
+  const j = extractJsonBlock(t) || safeJsonParse(t);
+  if (j && typeof j.en === 'string' && typeof j.tr === 'string') {
+    return { en: j.en, tr: j.tr };
+  }
+
+  // 2) EN:"..."/TR:"..."
+  const m = t.match(/["']?en["']?\s*[:=]\s*"(.*?)"[\s,;]+["']?tr["']?\s*[:=]\s*"(.*?)"/is);
+  if (m) return { en: m[1], tr: m[2] };
+
+  // 3) Labelled lines EN: ... \n TR: ...
+  const ml = t.match(/en\s*[:\-]\s*(.+)\n\s*tr\s*[:\-]\s*(.+)/i);
+  if (ml) return { en: ml[1].trim(), tr: ml[2].trim() };
+
+  // 4) Two non-empty lines → assume [en, tr]
+  const lines = t.split(/\r?\n+/).map(s => s.trim()).filter(Boolean);
+  if (lines.length === 2) return { en: lines[0], tr: lines[1] };
+
+  return null;
+}
+
+function clampFortunes(data) {
+  const clean = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 120);
+  return { en: clean(data.en), tr: clean(data.tr) };
+}
+
+// ----------------------------- Memory -----------------------------
 const store = new Map();
 // store.set(deviceId, { fortune:{en,tr}, mood, createdAt, refreshAt })
 
-// ----------------------------- OpenAI Çağrısı -----------------------------
+// ----------------------------- OpenAI -----------------------------
 async function callOpenAI(model, prompt, apiKey) {
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
@@ -103,35 +142,23 @@ async function callOpenAI(model, prompt, apiKey) {
 
 async function askOpenAIWithFallbacks(prompt) {
   // 1) gpt-5 + primary
-  try {
-    return await callOpenAI(OPENAI_MODEL, prompt, PRIMARY_KEY);
-  } catch (e1) {
-    console.warn('[openai] primary failed on', OPENAI_MODEL, e1.message);
-  }
+  try { return await callOpenAI(OPENAI_MODEL, prompt, PRIMARY_KEY); }
+  catch (e1) { console.warn('[openai] primary failed on', OPENAI_MODEL, e1.message); }
   // 2) gpt-5 + backup
   if (BACKUP_KEY) {
-    try {
-      return await callOpenAI(OPENAI_MODEL, prompt, BACKUP_KEY);
-    } catch (e2) {
-      console.warn('[openai] backup failed on', OPENAI_MODEL, e2.message);
-    }
+    try { return await callOpenAI(OPENAI_MODEL, prompt, BACKUP_KEY); }
+    catch (e2) { console.warn('[openai] backup failed on', OPENAI_MODEL, e2.message); }
   }
-  // 3) fallback model + primary
-  try {
-    return await callOpenAI(FALLBACK_MODEL, prompt, PRIMARY_KEY);
-  } catch (e3) {
-    console.warn('[openai] primary failed on', FALLBACK_MODEL, e3.message);
-  }
-  // 4) fallback model + backup
-  if (BACKUP_KEY) {
-    return await callOpenAI(FALLBACK_MODEL, prompt, BACKUP_KEY);
-  }
-  // Hepsi düştüyse:
+  // 3) fallback + primary
+  try { return await callOpenAI(FALLBACK_MODEL, prompt, PRIMARY_KEY); }
+  catch (e3) { console.warn('[openai] primary failed on', FALLBACK_MODEL, e3.message); }
+  // 4) fallback + backup
+  if (BACKUP_KEY) return await callOpenAI(FALLBACK_MODEL, prompt, BACKUP_KEY);
   throw new Error('all_openai_attempts_failed');
 }
 
 async function generateFortune() {
-  const prompt = `
+  const basePrompt = `
 You are a careful, warm fortune writer.
 
 Goal:
@@ -153,32 +180,43 @@ Safety:
 - No spying/harassing/stalking directives; no slurs or profanity.
 
 Output rules:
-- Return ONLY a single minified JSON object.
-- Keys: "en" and "tr".
-- ≤ 30 words per language.
+- Return ONLY a single one-line JSON object, no code fences, no extra text.
+- Keys: "en" and "tr". Max 30 words each.
+- Do NOT mix languages in one value.
 
 Format EXACTLY:
-{"en":"<english fortune>","tr":"<turkish fortune>"}
+{"en":"<english>","tr":"<turkish>"}
 `.trim();
 
-  const out = await askOpenAIWithFallbacks(prompt);
+  // 1) İlk deneme
+  let out = await askOpenAIWithFallbacks(basePrompt);
+  let data = parseBilingual(out);
 
-  let data = extractJsonBlock(out) || safeJsonParse(out);
-  if (!data || !data.en || !data.tr) {
-    const en = (out || '').split('\n').find(x => /[a-z]/i.test(x)) || 'Make room. New things are arriving.';
-    const tr = 'Yer aç. Yeni şeyler geliyor.';
-    data = { en: en.trim().slice(0,120), tr: tr.trim().slice(0,120) };
+  // 2) JSON çıkmadıysa: STRICT retry (tek sefer)
+  if (!data) {
+    const strictPrompt = basePrompt + '\n\nSTRICT MODE: Output ONLY raw JSON exactly as specified. No prose, no backticks.';
+    try {
+      out = await askOpenAIWithFallbacks(strictPrompt);
+      data = parseBilingual(out);
+    } catch {}
   }
-  data.en = String(data.en).trim().slice(0,120);
-  data.tr = String(data.tr).trim().slice(0,120);
 
+  // 3) Hâlâ olmadıysa güvenli fallback
+  if (!data || !data.en || !data.tr) {
+    data = {
+      en: 'Make room. New things are arriving.',
+      tr: 'Yer aç. Yeni şeyler geliyor.'
+    };
+  }
+
+  const { en, tr } = clampFortunes(data);
   const createdAt = nowISO();
   const refreshAt = plus24hISO();
 
   return {
     ok: true,
-    fortune: { en: data.en, tr: data.tr },
-    mood: 'light', // UI etiketi sabit; istersen modele ek alan ürettirebiliriz.
+    fortune: { en, tr },
+    mood: 'light',
     createdAt,
     refreshAt,
     serverNow: createdAt
@@ -220,7 +258,7 @@ app.post('/api/fortune', async (req, res) => {
   }
 });
 
-// ------------------------ Paylaşım Kartı (lazy canvas) ---------------------
+// ------------------------ Share Card (lazy canvas) ---------------------
 let createCanvas, registerFont;
 let __hasCanvas = false;
 let __fontsReady = false;
@@ -414,7 +452,7 @@ app.get('/share-card.png', async (req, res) => {
   res.send(png);
 });
 
-// ------------------------------- Sağlık -----------------------------------
+// ------------------------------- Health -----------------------------------
 app.get('/health', (_req, res) => res.json({ ok: true, time: nowISO() }));
 
 // -------------------------------- Start -----------------------------------
