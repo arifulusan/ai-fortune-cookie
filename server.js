@@ -8,7 +8,6 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import cookieParser from 'cookie-parser';
-import fetch from 'node-fetch';
 import fs from 'node:fs';
 
 const __filename = fileURLToPath(import.meta.url);
