@@ -1,5 +1,5 @@
 // Fortuny backend — Daily AI fortune + Spotify-like share card
-// GPT-5 default + fallback, strict JSON parsing, dev force, diag, lazy-canvas
+// GPT-5 default + fallback, force JSON, fallback-regeneration, dev force, diag, lazy-canvas
 // --------------------------------------------------------------------------------------------
 
 import 'dotenv/config';
@@ -24,8 +24,11 @@ const FALLBACK_MODEL = process.env.OPENAI_MODEL_FALLBACK || 'gpt-4.1-mini';
 const PRIMARY_KEY = process.env.OPENAI_API_KEY || '';
 const BACKUP_KEY  = process.env.OPENAI_API_KEY_BACKUP || '';
 
-// Dev ortamında 24h kilidi bypass
 const DEV_ALLOW_FORCE = process.env.DEV_ALLOW_FORCE === '1';
+
+// Fallback metin sabitleri (algılama için)
+const FALLBACK_EN = 'Make room. New things are arriving.';
+const FALLBACK_TR = 'Yer aç. Yeni şeyler geliyor.';
 
 app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
@@ -83,31 +86,11 @@ function pickOutputText(respJson) {
   }
   return '';
 }
-
-// Çift dilli metni {en,tr}’ye parçala (JSON değilse)
-function parseBilingual(out) {
-  if (!out) return null;
-  let t = stripCodeFences(out);
-
-  // 1) JSON
-  const j = extractJsonBlock(t) || safeJsonParse(t);
-  if (j && typeof j.en === 'string' && typeof j.tr === 'string') {
-    return { en: j.en, tr: j.tr };
-  }
-
-  // 2) EN:"..." TR:"..."
-  const m = t.match(/["']?en["']?\s*[:=]\s*"(.*?)"[\s,;]+["']?tr["']?\s*[:=]\s*"(.*?)"/is);
-  if (m) return { en: m[1], tr: m[2] };
-
-  // 3) Etiketli satırlar
-  const ml = t.match(/en\s*[:\-]\s*(.+)\n\s*tr\s*[:\-]\s*(.+)/i);
-  if (ml) return { en: ml[1].trim(), tr: ml[2].trim() };
-
-  // 4) İki satır → [en, tr]
-  const lines = t.split(/\r?\n+/).map(s => s.trim()).filter(Boolean);
-  if (lines.length === 2) return { en: lines[0], tr: lines[1] };
-
-  return null;
+function isFallbackFortune(f){ 
+  if (!f) return false; 
+  const en = String(f.en||'').trim();
+  const tr = String(f.tr||'').trim();
+  return (en === FALLBACK_EN) || (tr === FALLBACK_TR);
 }
 function clampFortunes(data) {
   const clean = s => String(s || '').replace(/\s+/g, ' ').trim().slice(0, 120);
@@ -115,8 +98,8 @@ function clampFortunes(data) {
 }
 
 // ----------------------------- Hafıza / Store -----------------------------
+// value: { fortune:{en,tr}, mood, createdAt, refreshAt, source:'ai'|'fallback', tries:number }
 const store = new Map();
-// store.set(deviceId, { fortune:{en,tr}, mood, createdAt, refreshAt })
 
 // ----------------------------- OpenAI Çağrısı -----------------------------
 async function callOpenAI(model, prompt, apiKey) {
@@ -129,7 +112,10 @@ async function callOpenAI(model, prompt, apiKey) {
     body: JSON.stringify({
       model,
       input: prompt,
-      temperature: 0.8
+      temperature: 0.8,
+      // 🔒 JSON’u zorla (Responses API): artık 'response_format' değil, 'text.format'
+      text: { format: 'json' },
+      max_output_tokens: 200
     })
   });
   if (!res.ok) {
@@ -191,27 +177,25 @@ Format EXACTLY:
   // 1) İlk deneme
   let out = await askOpenAIWithFallbacks(basePrompt);
   console.log('[openai] raw out (first 200):', (out || '').slice(0,200));
-  let data = parseBilingual(out);
+  let data = extractJsonBlock(out) || safeJsonParse(out);
 
   // 2) JSON çıkmadıysa: STRICT retry (tek sefer)
-  if (!data) {
+  if (!data || typeof data.en !== 'string' || typeof data.tr !== 'string') {
     const strictPrompt = basePrompt + '\n\nSTRICT MODE: Output ONLY raw JSON exactly as specified. No prose, no backticks.';
     try {
       out = await askOpenAIWithFallbacks(strictPrompt);
       console.log('[openai][strict] raw out (first 200):', (out || '').slice(0,200));
-      data = parseBilingual(out);
+      data = extractJsonBlock(out) || safeJsonParse(out);
     } catch (e) {
       console.warn('[openai] strict retry failed:', e.message);
     }
   }
 
-  // 3) Hâlâ olmadıysa güvenli fallback
+  let source = 'ai';
   if (!data || !data.en || !data.tr) {
     console.warn('[openai] parse failed, using local fallback');
-    data = {
-      en: 'Make room. New things are arriving.',
-      tr: 'Yer aç. Yeni şeyler geliyor.'
-    };
+    data = { en: FALLBACK_EN, tr: FALLBACK_TR };
+    source = 'fallback';
   }
 
   const { en, tr } = clampFortunes(data);
@@ -224,7 +208,8 @@ Format EXACTLY:
     mood: 'light',
     createdAt,
     refreshAt,
-    serverNow: createdAt
+    serverNow: createdAt,
+    source
   };
 }
 
@@ -244,24 +229,36 @@ app.post('/api/fortune', async (req, res) => {
   const existing = store.get(deviceId);
   const nowMs = Date.now();
 
-  // DEV force baypas (sadece DEV_ALLOW_FORCE=1 ise)
   const force = DEV_ALLOW_FORCE && String(req.query.force) === '1';
+  const refreshMs = existing ? new Date(existing.refreshAt).getTime() : 0;
+  const cachedIsFallback = existing ? (existing.source === 'fallback' || isFallbackFortune(existing.fortune)) : false;
+  const cachedTries = existing?.tries ?? 0;
 
-  if (!force && existing && new Date(existing.refreshAt).getTime() > nowMs) {
+  // ❗ Fallback saklıysa: 24h dolmasa bile max 3 denemeye kadar yeniden üret
+  if (!force && existing && refreshMs > nowMs && !cachedIsFallback) {
+    return res.json({ ok: true, ...existing, serverNow: nowISO() });
+  }
+  if (!force && existing && refreshMs > nowMs && cachedIsFallback && cachedTries >= 3) {
     return res.json({ ok: true, ...existing, serverNow: nowISO() });
   }
 
   try {
     const fresh = await generateFortune();
+    const tries = (cachedIsFallback ? cachedTries : 0) + (fresh.source === 'fallback' ? 1 : 0);
+
     store.set(deviceId, {
       fortune: fresh.fortune,
       mood: fresh.mood,
       createdAt: fresh.createdAt,
-      refreshAt: fresh.refreshAt
+      refreshAt: fresh.refreshAt,
+      source: fresh.source,
+      tries
     });
-    res.json(fresh);
+    res.json({ ...fresh, tries });
   } catch (err) {
     console.error('fortune error:', err.message);
+    // Hata olduysa var olanı döndür (kullanıcı boş kalmasın)
+    if (existing) return res.json({ ok: true, ...existing, serverNow: nowISO(), note: 'returned_cached_due_error' });
     res.status(429).json({ ok: false, error: 'rate_limited', message: 'Too many requests today. Try again later.' });
   }
 });
