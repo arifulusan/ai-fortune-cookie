@@ -1,5 +1,5 @@
-// Fortuny backend — Daily AI fortune + Spotify-like share card (lazy-canvas)
-// --------------------------------------------------------------------------
+// Fortuny backend — Daily AI fortune + Spotify-like share card (GPT-5 + fallbacks, lazy-canvas)
+// --------------------------------------------------------------------------------------------
 
 import 'dotenv/config';
 import express from 'express';
@@ -15,7 +15,11 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 const PORT = process.env.PORT || 3000;
+
+// ==== Model ayarları: gpt-5 varsayılan, gpt-4.1-mini fallback
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-5';
+const FALLBACK_MODEL = process.env.OPENAI_MODEL_FALLBACK || 'gpt-4.1-mini';
+
 const PRIMARY_KEY = process.env.OPENAI_API_KEY || '';
 const BACKUP_KEY  = process.env.OPENAI_API_KEY_BACKUP || '';
 
@@ -60,6 +64,7 @@ function extractJsonBlock(text) {
   return safeJsonParse(text.slice(start, end + 1), null);
 }
 function pickOutputText(respJson) {
+  // OpenAI Responses API tipik alanları
   if (respJson?.output_text) return String(respJson.output_text);
   const o = respJson?.output?.[0]?.content?.[0]?.text?.value;
   if (o) return String(o);
@@ -75,7 +80,7 @@ const store = new Map();
 // store.set(deviceId, { fortune:{en,tr}, mood, createdAt, refreshAt })
 
 // ----------------------------- OpenAI Çağrısı -----------------------------
-async function callOpenAI(prompt, apiKey) {
+async function callOpenAI(model, prompt, apiKey) {
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: {
@@ -83,7 +88,7 @@ async function callOpenAI(prompt, apiKey) {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
+      model,
       input: prompt,
       temperature: 0.8
     })
@@ -96,8 +101,37 @@ async function callOpenAI(prompt, apiKey) {
   return pickOutputText(json);
 }
 
+async function askOpenAIWithFallbacks(prompt) {
+  // 1) gpt-5 + primary
+  try {
+    return await callOpenAI(OPENAI_MODEL, prompt, PRIMARY_KEY);
+  } catch (e1) {
+    console.warn('[openai] primary failed on', OPENAI_MODEL, e1.message);
+  }
+  // 2) gpt-5 + backup
+  if (BACKUP_KEY) {
+    try {
+      return await callOpenAI(OPENAI_MODEL, prompt, BACKUP_KEY);
+    } catch (e2) {
+      console.warn('[openai] backup failed on', OPENAI_MODEL, e2.message);
+    }
+  }
+  // 3) fallback model + primary
+  try {
+    return await callOpenAI(FALLBACK_MODEL, prompt, PRIMARY_KEY);
+  } catch (e3) {
+    console.warn('[openai] primary failed on', FALLBACK_MODEL, e3.message);
+  }
+  // 4) fallback model + backup
+  if (BACKUP_KEY) {
+    return await callOpenAI(FALLBACK_MODEL, prompt, BACKUP_KEY);
+  }
+  // Hepsi düştüyse:
+  throw new Error('all_openai_attempts_failed');
+}
+
 async function generateFortune() {
-const prompt = `
+  const prompt = `
 You are a careful, warm fortune writer.
 
 Goal:
@@ -125,30 +159,18 @@ Output rules:
 
 Format EXACTLY:
 {"en":"<english fortune>","tr":"<turkish fortune>"}
-
-Examples (learn tone; don’t copy):
-{"en":"We heard a screenshot got saved at 01:17. Looks like your quiet upgrade stings. Choose peace, not pings; the right knock comes without drama.","tr":"Dün 01:17’de ekran görüntüsü alınmış, duyduk. Sanki sessiz yükselişin koydu. Pingi değil, huzuru seç; doğru kapı dramasız çalar."}
-{"en":"They post meals, not feelings. Maybe your name still pauses their playlist. Keep moving—respect isn’t a breadcrumb trail.","tr":"Duygu yok; tabak var. Galiba adın hâlâ çalma listesini durduruyor. Akmaya devam et; saygı kırıntı izi değildir."}
-{"en":"A midnight “hey?” is loading. Decide now: answer with standards or sleep like you’ve learned. Either way, your heart won’t bargain.","tr":"Gece bir “selam?” hazırlanıyor. Şimdi seç: ölçüyle dön ya da dersini almış gibi uyu. İki durumda da kalbin pazarlık yapmaz."}
 `.trim();
 
-
-  const out = await callOpenAI(sys, PRIMARY_KEY)
-    .catch(async (e) => {
-      console.warn('[openai] primary failed:', e.message);
-      if (!BACKUP_KEY) throw e;
-      return await callOpenAI(sys, BACKUP_KEY);
-    });
+  const out = await askOpenAIWithFallbacks(prompt);
 
   let data = extractJsonBlock(out) || safeJsonParse(out);
   if (!data || !data.en || !data.tr) {
     const en = (out || '').split('\n').find(x => /[a-z]/i.test(x)) || 'Make room. New things are arriving.';
     const tr = 'Yer aç. Yeni şeyler geliyor.';
-    data = { en: en.trim().slice(0,120), tr: tr.trim().slice(0,120), mood: 'light' };
+    data = { en: en.trim().slice(0,120), tr: tr.trim().slice(0,120) };
   }
   data.en = String(data.en).trim().slice(0,120);
   data.tr = String(data.tr).trim().slice(0,120);
-  if (!data.mood) data.mood = 'light';
 
   const createdAt = nowISO();
   const refreshAt = plus24hISO();
@@ -156,7 +178,7 @@ Examples (learn tone; don’t copy):
   return {
     ok: true,
     fortune: { en: data.en, tr: data.tr },
-    mood: data.mood,
+    mood: 'light', // UI etiketi sabit; istersen modele ek alan ürettirebiliriz.
     createdAt,
     refreshAt,
     serverNow: createdAt
